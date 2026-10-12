@@ -1,0 +1,29 @@
+{
+  "_about": "Controlled vocabulary for recipe tags. The recommendation engine scores recipes by these fields, so every recipe must use only these values.",
+  "category": ["dessert", "baking", "main", "soup", "salad", "side", "snack", "breakfast", "drink", "sauce"],
+  "dish": [
+    "cake", "brownie", "cookie", "pie", "tart", "pastry", "pudding", "custard", "mousse", "cheesecake", "ice-cream", "sweet-bread", "doughnut", "confection", "fruit-dessert",
+    "hot-drink", "cold-drink",
+    "pasta", "noodles", "rice", "pizza", "flatbread", "bread", "dumpling", "sandwich", "wrap", "taco",
+    "curry", "stew", "braise", "roast", "grill", "stir-fry", "fried", "skewer", "meatball", "burger", "schnitzel",
+    "soup", "salad", "dip", "egg-dish", "pancake", "porridge", "casserole", "gratin", "savoury-pie", "seafood-dish", "vegetable-dish"
+  ],
+  "flavors": [
+    "chocolate", "vanilla", "caramel", "coffee", "citrus", "berry", "apple", "banana", "tropical", "stone-fruit", "nut", "coconut", "honey", "cinnamon", "spice", "ginger",
+    "garlic", "onion", "herb", "cheese", "creamy", "tomato", "smoky", "spicy", "sour", "umami", "sweet-savoury", "peanut", "sesame", "mint", "wine"
+  ],
+  "mains": [
+    "chicken", "beef", "pork", "lamb", "fish", "shrimp", "seafood", "egg", "tofu", "beans", "lentils", "chickpeas",
+    "rice", "noodles", "pasta", "potato", "flour", "cornmeal", "bread",
+    "cheese", "milk", "cream", "yogurt", "butter", "cocoa", "sugar", "fruit", "vegetables", "mushroom", "eggplant", "spinach", "cabbage", "pumpkin", "carrot", "nuts", "coconut"
+  ],
+  "method": ["baked", "fried", "deep-fried", "grilled", "roasted", "simmered", "steamed", "stir-fried", "no-cook", "chilled", "boiled"],
+  "cuisine": [
+    "american", "mexican", "brazilian", "peruvian", "argentinian", "canadian", "caribbean",
+    "british", "french", "italian", "spanish", "greek", "german", "austrian", "hungarian", "polish", "swedish", "russian",
+    "turkish", "lebanese", "middle-eastern", "moroccan", "nigerian", "south-african", "ethiopian",
+    "indian", "thai", "vietnamese", "japanese", "chinese", "korean", "indonesian", "malaysian", "filipino",
+    "australian", "international"
+  ],
+  "diet": ["vegetarian", "vegan", "gluten-free", "dairy-free"]
+}
