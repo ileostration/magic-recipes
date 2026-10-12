@@ -14,6 +14,45 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='10' y='8' width='44' height='48' rx='4' fill='%23fbf9f4' stroke='%23c49a30' stroke-width='3'/%3E%3Cpath d='M20 22h24M20 32h24M20 42h16' stroke='%23c49a30' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
 </head>
 <body data-scene="landing" data-state="closed">
+<!-- loading screen: a cauldron brews from left to right as the grimoire loads; ingredients fall in every half second -->
+<style>
+#loader { position: fixed; inset: 0; z-index: 100; background: #fff; display: grid; place-items: center; transition: opacity .5s ease; }
+#loader.off { opacity: 0; pointer-events: none; }
+#loader .pot { position: relative; width: 150px; height: 211px; }
+#loader .cauldron { position: absolute; left: 0; bottom: 0; width: 150px; height: auto; display: block; }
+#loader .ing { position: absolute; left: 50%; top: 8px; width: 50px; height: 50px; margin-left: -25px; pointer-events: none; animation: toss .9s cubic-bezier(.3, .6, .6, 1) forwards; }
+@keyframes toss { 0% { transform: translateY(-28px) rotate(-35deg) scale(.7); opacity: 0; } 18% { opacity: 1; } 75% { transform: translateY(78px) rotate(25deg) scale(.95); opacity: 1; } 100% { transform: translateY(104px) rotate(45deg) scale(.35); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #loader .ing { animation-duration: .5s; } }
+</style>
+<div id="loader" role="status" aria-label="Loading the grimoire"><div class="pot"><img class="cauldron" src="assets/loader/cauldron-1.webp" alt="" width="150" height="211"></div></div>
+<script>
+(function () {
+  var L = document.getElementById('loader'), pot = L.querySelector('.pot'), img = L.querySelector('.cauldron');
+  var ING = ['garlic', 'onion', 'carrot', 'tomato', 'mushroom', 'chilli', 'lemon', 'basil', 'ginger', 'avocado'];
+  var frames = [], phase = 1, done = false, last = -1;
+  for (var i = 1; i <= 5; i++) { var f = new Image(); f.src = 'assets/loader/cauldron-' + i + '.webp'; frames.push(f); }
+  ING.forEach(function (n) { var m = new Image(); m.src = 'assets/loader/ing-' + n + '.webp'; });
+  function toss() {
+    if (done) return;
+    var k; do { k = Math.floor(Math.random() * ING.length); } while (k === last); last = k;
+    var el = document.createElement('img');
+    el.className = 'ing'; el.alt = ''; el.src = 'assets/loader/ing-' + ING[k] + '.webp';
+    el.addEventListener('animationend', function () { el.remove(); });
+    pot.appendChild(el);
+  }
+  toss();
+  var timer = setInterval(toss, 500);
+  window.__loader = {
+    set: function (n) { if (done || n <= phase) return; phase = n; img.src = frames[n - 1].src; },
+    done: function () {
+      if (done) return;
+      this.set(5); done = true; clearInterval(timer);
+      setTimeout(function () { L.classList.add('off'); setTimeout(function () { L.remove(); }, 600); }, 420);
+    }
+  };
+  setTimeout(function () { window.__loader.done(); }, 15000);   /* never keep a reader waiting on a stuck resource */
+})();
+</script>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
     <linearGradient id="goldg" x1="0" y1="0" x2="1" y2="1">
@@ -50,6 +89,11 @@
     </g>
     <g id="i-pen" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
       <path d="M4 20l3-1 11-11-2-2L5 17z"/><path d="M14 8l2 2"/><path d="M4 20l1-3"/>
+    </g>
+    <g id="i-prev" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></g>
+    <g id="i-next" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></g>
+    <g id="i-book" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 6.5C10.4 5 8.2 4.4 4 4.6v13.2c4.2-.2 6.4.4 8 1.9 1.6-1.5 3.8-2.1 8-1.9V4.6c-4.2-.2-6.4.4-8 1.9z"/><path d="M12 6.5v13.2"/>
     </g>
   </defs>
 </svg>
@@ -88,10 +132,13 @@
   </section>
 
   <nav class="menu" id="menu" aria-label="Grimoire menu">
+    <button type="button" data-act="prev" title="Previous page (left arrow)" aria-label="Previous page"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-prev"/></svg></button>
     <button type="button" data-act="marks" title="Bookmarks" aria-label="Bookmarks"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-cards"/></svg><span class="count"></span></button>
     <button type="button" data-act="wand" title="Change view" aria-label="Change view" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-wand"/></svg></button>
     <button type="button" data-act="orb" title="Ask the crystal (/)" aria-label="Ask the crystal"><span class="mini-orb"></span></button>
     <button type="button" data-act="notes" title="Notes" aria-label="Notes"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-pen"/></svg></button>
+    <button type="button" data-act="book" title="Back to the recipes" aria-label="Back to the recipes"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-book"/></svg></button>
+    <button type="button" data-act="next" title="Next page (right arrow)" aria-label="Next page"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-next"/></svg></button>
   </nav>
 </section>
 

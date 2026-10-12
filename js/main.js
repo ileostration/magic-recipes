@@ -6,6 +6,9 @@ import { createViews } from './views.js';
 import { createBall } from './ball.js';
 import { createLanding } from './landing.js';
 
+const loader = window.__loader || { set() {}, done() {} };
+loader.set(2);   /* the recipes are in */
+
 const app = {
   recipes, history,
   rec: new Recommender(recipes.concat(history.liveRecipes()), history),
@@ -34,6 +37,7 @@ try {
   app.meadow = createMeadow(document.getElementById('grass'));
 } catch (e) { app.meadow = null; }
 if (!app.meadow) document.body.classList.add('nogl');
+loader.set(3);   /* the meadow is built */
 
 app.reader = createReader(app);
 app.views = createViews(app);
@@ -49,6 +53,7 @@ app.menu = {
     const v = app.views.open;
     menu.querySelector('[data-act="marks"]').classList.toggle('on', v === 'marks');
     menu.querySelector('[data-act="notes"]').classList.toggle('on', v === 'notes');
+    menu.querySelector('[data-act="book"]').classList.toggle('on', !v);
     menu.querySelector('[data-act="wand"]').hidden = v !== 'marks';
     menu.querySelector('[data-act="wand"]').title = app.views.marksMode === 'cards' ? 'Show as a list' : 'Show as cards';
   }
@@ -61,6 +66,8 @@ menu.addEventListener('click', (e) => {
   else if (act === 'notes') { app.views.open === 'notes' ? app.views.closeAll() : app.views.openNotes(); }
   else if (act === 'orb') app.ball.open('');
   else if (act === 'wand') app.views.toggleMarksMode();
+  else if (act === 'prev' || act === 'next') { const dir = act === 'next' ? 1 : -1; if (app.views.open) app.views.flip(dir); else dir > 0 ? app.reader.next() : app.reader.prev(); }
+  else if (act === 'book') { app.ball.close(); app.views.closeAll(); }   /* back to where the reader was in the recipes */
 });
 app.menu.refresh();
 
@@ -81,5 +88,12 @@ const m = /^#r\/(.+)$/.exec(location.hash);
 const deep = m && app.byId(decodeURIComponent(m[1]));
 if (deep) { app.landing.hide(); app.reader.open(deep, false); }
 else app.landing.show(true);
+
+/* the loading screen lifts only once the meadow has drawn with the book pressing on it and the display faces are in */
+Promise.all([app.meadow && !deep ? app.meadow.ready : Promise.resolve(), document.fonts ? document.fonts.ready : Promise.resolve()]).then(() => {
+  loader.set(4);
+  if (!deep) app.landing.settle();
+  requestAnimationFrame(() => requestAnimationFrame(() => loader.done()));
+});
 
 window.__app = app;

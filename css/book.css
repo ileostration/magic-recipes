@@ -264,7 +264,7 @@ body.view-open #reader > .runes, body.ball-open #reader > .runes { display: none
 .notes .note::placeholder { color: rgba(109, 84, 32, .55); font-style: italic; }
 .notes .ink { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
 .notes .pad.text .ink { pointer-events: none; }
-.notes .pad.draw .ink { pointer-events: auto; cursor: url(../assets/pen-cursor.svg) 3 29, crosshair; }
+.notes .pad.draw .ink { pointer-events: auto; cursor: url(../assets/pen-cursor.svg) 23 9, crosshair; }
 .notes .pad.draw .note { pointer-events: none; }
 .notes .pad.draw::after { content: ''; position: absolute; inset: -4px; border: 1px dashed rgba(184, 138, 36, .55); pointer-events: none; }
 .notes .nfoot { display: flex; justify-content: space-between; align-items: center; font-size: .78em; color: #9a7a30; letter-spacing: .05em; }
@@ -311,6 +311,7 @@ body.portrait .rp { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)
 .menu button svg { width: 24px; height: 24px; }
 .menu button:hover { background: rgba(255, 255, 255, .5); transform: translateY(-2px); }
 .menu button.on { background: rgba(233, 205, 117, .75); }
+.menu button[data-act="prev"], .menu button[data-act="next"] { width: 40px; }
 .menu button .count { position: absolute; right: -4px; top: -4px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box; border-radius: 9px; background: #c49a30; color: #2a1d06; font: 700 11px/18px var(--text); text-align: center; }
 .menu button .count:empty { display: none; }
 .menu .mini-orb { width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff 0, rgba(255, 255, 255, .6) 10%, rgba(120, 200, 255, .7) 30%, rgba(150, 70, 230, .8) 60%, rgba(20, 20, 70, .95) 100%); box-shadow: 0 0 10px rgba(140, 200, 255, .7); }

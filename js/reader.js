@@ -5,7 +5,7 @@ import { DWELL_MS } from './recommend.js';
 import { history } from './history.js';
 import * as wiki from './wikibooks.js';
 import { Flipbook } from './flipbook.js';
-import { paginate, blankPage, esc } from './pages.js';
+import { paginate, blankPage, esc, withBookmark } from './pages.js';
 import { attachSketch, recognize } from './sketch.js';
 import { findImage, creditHtml } from './images.js';
 
@@ -195,6 +195,8 @@ export function createReader(app) {
   function toggleBookmark(id) {
     const on = history.toggleBookmark(id);
     root.querySelectorAll('.bm[data-id="' + id + '"]').forEach((b) => { b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+    /* the pages not on screen are stored as mark-up: every page of this recipe, on every visit in the trail, follows */
+    trail.forEach((e) => { if (e.recipe.id === id) { e.pages = e.pages.map((p) => withBookmark(p, id, on)); if (e === current) fb.pages = e.pages; } });
     app.menu.refresh();
     say(on ? 'Bookmarked' : 'Bookmark removed');
     return on;

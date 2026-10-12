@@ -22,6 +22,13 @@ export const marbleClass = () => 'm' + Math.floor(Math.random() * 4) + ' o' + Ma
 export const bmBtn = (r) => { const on = history.isBookmarked(r.id); return '<button class="bm' + (on ? ' on' : '') + '" type="button" data-id="' + esc(r.id) + '" aria-pressed="' + on + '" aria-label="' + (on ? 'Remove bookmark: ' : 'Bookmark ') + esc(r.title) + '">' +
   '<svg viewBox="0 0 24 32" aria-hidden="true"><path class="r1" d="M2 0h20v31l-10-7.5L2 31z"/><path class="r2" d="M5.5 2.5h13v22.5l-6.5-4.9-6.5 4.9z"/><path class="r3" d="M8 8h8M8 12.5h8" /></svg></button>'; };
 
+/* flip the ribbon on every stored page of one recipe (by id, so two dishes with the same name stay apart) */
+export function withBookmark(html, id, on) {
+  const safe = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp('<button class="bm(?: on)?" type="button" data-id="' + safe + '" aria-pressed="(?:true|false)" aria-label="(?:Remove bookmark: |Bookmark )', 'g');
+  return html.replace(re, '<button class="bm' + (on ? ' on' : '') + '" type="button" data-id="' + id + '" aria-pressed="' + on + '" aria-label="' + (on ? 'Remove bookmark: ' : 'Bookmark '));
+}
+
 export function imagePage(r) {
   const im = r.image || history.image(r.id) || null;
   const img = im && im.url ? '<img alt="' + esc(im.alt || r.title) + '" src="' + esc(im.url) + '" loading="eager">' : '';

@@ -198,6 +198,11 @@ export function createViews(app) {
   return {
     get open() { return openView; }, get marksMode() { return marksMode; },
     openMarks, openNotes, closeAll, anyOpen: () => !!openView,
-    toggleMarksMode() { setMarksMode(marksMode === 'cards' ? 'list' : 'cards'); }
+    toggleMarksMode() { setMarksMode(marksMode === 'cards' ? 'list' : 'cards'); },
+    /* the menu arrows: one card round the wheel, or one page of the list or the planner */
+    flip(dir) {
+      if (openView === 'marks') { if (marksMode === 'cards') setRot(rot - dir * STEP); else flipBook(toc, dir); }
+      else if (openView === 'notes') flipBook(planner, dir);
+    }
   };
 }

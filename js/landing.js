@@ -156,6 +156,7 @@ export function createLanding(app) {
       section.hidden = true;
       app.meadow && app.meadow.pause();
     },
-    openBook, closeCover, begin
+    openBook, closeCover, begin,
+    settle() { layout(); footprint(); }
   };
 }
