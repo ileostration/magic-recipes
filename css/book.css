@@ -160,7 +160,7 @@ body.view-open #reader > .runes, body.ball-open #reader > .runes { display: none
 /* the engraved frame every page carries: acanthus corners, a head and tail piece, a 50% veil over the marble */
 .frame { position: absolute; inset: 5% 5.4%; border: 1px solid rgba(184, 138, 36, .9); box-shadow: inset 0 0 0 4px rgba(184, 138, 36, .3), 0 1px 0 rgba(255, 255, 255, .8); pointer-events: none; }
 .frame .veil-in { position: absolute; inset: 5px; background: rgba(255, 255, 255, .5); }
-.frame .orn { position: absolute; display: block; background: no-repeat center / contain; pointer-events: none; filter: drop-shadow(0 1px 0 rgba(255, 255, 255, .95)) drop-shadow(0 0 1px rgba(255, 255, 255, .6)); }
+.frame .fo { position: absolute; display: block; background: no-repeat center / contain; pointer-events: none; filter: drop-shadow(0 1px 0 rgba(255, 255, 255, .95)) drop-shadow(0 0 1px rgba(255, 255, 255, .6)); }
 .frame .c { width: 15%; aspect-ratio: 408 / 441; background-image: url(../assets/orn/corner-small.webp); }
 .frame .c.tl { left: -1.6%; top: -1.4%; } .frame .c.tr { right: -1.6%; top: -1.4%; transform: scaleX(-1); }
 .frame .c.bl { left: -1.6%; bottom: -1.4%; transform: scaleY(-1); } .frame .c.br { right: -1.6%; bottom: -1.4%; transform: scale(-1, -1); }
@@ -168,7 +168,7 @@ body.view-open #reader > .runes, body.ball-open #reader > .runes { display: none
 .frame .crest-b { left: 50%; bottom: -1.8%; width: 30%; aspect-ratio: 720 / 222; transform: translateX(-50%); background-image: url(../assets/orn/crest-bottom.webp); }
 .frame.photo .c { width: 13%; }
 .frame.cover-frame { inset: 5.4%; }
-.frame.cover-frame .veil-in, .frame.cover-frame .orn { display: none; }
+.frame.cover-frame .veil-in, .frame.cover-frame .fo { display: none; }
 /* the inside cover and chant page wear the flowered corners */
 .leaf .frame:not(.cover-frame) .c { width: 23%; aspect-ratio: 538 / 545; background-image: url(../assets/orn/corner-tl-flower.webp); }
 .leaf .frame:not(.cover-frame) .c.bl { background-image: url(../assets/orn/corner-bl.webp); aspect-ratio: 563 / 559; transform: none; }
@@ -190,6 +190,8 @@ body.view-open #reader > .runes, body.ball-open #reader > .runes { display: none
 .ph { position: absolute; inset: 11% 11% 11%; border: 1px solid rgba(184, 138, 36, .85); box-shadow: 0 0 0 4px rgba(255, 255, 255, .85), 0 0 0 5px rgba(184, 138, 36, .45); overflow: hidden; background: linear-gradient(160deg, #ece9e2, #d9d5cb); }
 .ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .ph img.broken { display: none; }
+.ph.seeking::before { content: 'Seeking a picture\2026'; position: absolute; left: 0; right: 0; top: 46%; text-align: center; font-family: var(--display); font-size: 1.3em; letter-spacing: .08em; color: #a97a1c; opacity: .7; animation: seek 1.6s ease-in-out infinite; }
+@keyframes seek { 50% { opacity: .3; } }
 .ph .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 1.1em 1.2em; text-align: center; color: #fffdf3; background: linear-gradient(0deg, rgba(40, 28, 8, .66), transparent); }
 .ph .cap b { display: block; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; font-size: 1.05em; }
 .ph .cap span { font-style: italic; font-size: .98em; opacity: .9; }
@@ -214,24 +216,42 @@ body.view-open #reader > .runes, body.ball-open #reader > .runes { display: none
 .rp .src a { color: #8a6212; }
 .rp .more { margin-top: auto; text-align: right; font-weight: 600; font-size: .78em; letter-spacing: .2em; text-transform: uppercase; color: #9a7a30; padding-top: .5em; }
 
-/* nutrition page */
-.np { height: 100%; padding: 13% 12% 13%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: 1em; position: relative; }
-.label { border: 2px solid #3a2d12; padding: .6em .8em; background: rgba(255, 255, 255, .6); font-size: 1.05em; }
-.label .lhead { font-family: var(--display); font-size: 2.1em; line-height: 1; letter-spacing: .02em; }
-.label .lsub { font-size: .9em; color: #6d5420; border-bottom: 6px solid #3a2d12; padding-bottom: .3em; margin-bottom: .3em; }
-.label .kcal { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 3px solid #3a2d12; padding: .2em 0; }
-.label .kcal span { font-weight: 600; font-size: 1.1em; }
-.label .kcal b { font-family: var(--display); font-size: 2.2em; line-height: 1; }
-.label .nrow { display: grid; grid-template-columns: 1fr auto 3.2em; gap: .6em; padding: .22em 0; border-bottom: 1px solid rgba(58, 45, 18, .5); }
-.label .nrow b { font-weight: 600; }
-.label .nrow i { text-align: right; font-style: normal; color: #6d5420; }
-.label .nrow:nth-child(6) span { padding-left: 1.2em; }
-.label .lfoot { font-size: .72em; color: #6d5420; line-height: 1.3; padding-top: .4em; }
+/* nutrition page: a macro box, a two-column Nutrition Facts panel, the ingredient list and the net contents */
+.np { height: 100%; padding: 9% 9% 9%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: .55em; position: relative; font-size: .9em; overflow: hidden; }
+.np .macro { display: grid; grid-template-columns: repeat(3, 1fr); gap: .3em; border: 1px solid rgba(184, 138, 36, .85); background: rgba(255, 255, 255, .55); padding: .5em .6em .35em; text-align: center; box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .7); }
+.np .macro div b { display: block; font: 700 1.7em/1 var(--text); color: #a97a1c; }
+.np .macro div span { display: block; margin-top: .25em; font-size: .7em; letter-spacing: .24em; text-transform: uppercase; font-weight: 600; color: #8f6a1a; }
+.np .macro small { grid-column: 1 / -1; font-size: .72em; font-style: italic; color: #6d5420; letter-spacing: .05em; }
+.label2 { border: 2px solid #3a2d12; padding: .4em .6em .35em; background: rgba(255, 255, 255, .64); font-size: .92em; color: #2d2008; }
+.label2 .lhead { font-family: var(--display); font-size: 1.9em; line-height: 1; letter-spacing: .02em; padding-bottom: .1em; border-bottom: 1px solid #3a2d12; }
+.label2 .lsub { font-size: .9em; color: #6d5420; padding: .3em 0; }
+.label2 .lrow { display: grid; grid-template-columns: 1fr auto 2.9em; gap: .5em; padding: .13em 0; border-bottom: 1px solid rgba(58, 45, 18, .45); line-height: 1.25; align-items: baseline; }
+.label2 .lrow.top { grid-template-columns: 1fr auto; }
+.label2 .lrow.top i { display: none; }
+.label2 .lrow span { font-weight: 600; }
+.label2 .lrow.sub span, .label2 .lrow.sub2 span { font-weight: 400; padding-left: 1.1em; }
+.label2 .lrow.sub2 span { padding-left: 2.1em; }
+.label2 .lrow b { font-weight: 400; text-align: right; white-space: nowrap; }
+.label2 .lrow i { text-align: right; font-style: normal; font-weight: 600; }
+.label2 .kcal { display: flex; justify-content: space-between; align-items: baseline; border-top: 6px solid #3a2d12; border-bottom: 3px solid #3a2d12; padding: .12em 0; margin-top: .1em; }
+.label2 .kcal span { font-weight: 700; font-size: 1.05em; }
+.label2 .kcal b { font: 700 1.9em/1 var(--text); }
+.label2 .cols { display: grid; grid-template-columns: 1fr 1fr; column-gap: 1.3em; }
+.label2 .col:first-child { border-right: 1px solid rgba(58, 45, 18, .35); padding-right: 1.3em; margin-right: -1.3em; }
+.label2 .dv { text-align: right; font-size: .78em; padding: .15em 0; border-bottom: 1px solid rgba(58, 45, 18, .45); font-weight: 600; }
+.label2 .lfoot { font-size: .7em; color: #6d5420; line-height: 1.3; padding-top: .35em; border-top: 3px solid #3a2d12; margin-top: .1em; }
+.np .ingl { font-size: .84em; line-height: 1.3; color: #3a2d12; }
+.np .ingl b, .np .netc b { font-weight: 600; letter-spacing: .14em; text-transform: uppercase; font-size: .84em; color: #8f6a1a; }
+.np .netc { font-size: .86em; color: #3a2d12; }
 .fit { font-weight: 600; color: #7a5410; text-align: center; font-size: 1em; }
 
-/* notes page: type on the lines, draw over them */
+/* notes page: type on the lines, or switch to Draw and sketch over them */
 .notes { padding: 13% 11% 13%; box-sizing: border-box; height: 100%; display: flex; flex-direction: column; gap: .3em; position: relative; }
+.notes .nhead { display: flex; align-items: center; justify-content: space-between; gap: .6em; }
 .notes h2 { font-family: var(--display); font-weight: 400; font-size: 1.9em; margin: 0; color: #a97a1c; }
+.notes .nmode { display: inline-flex; border: 1px solid rgba(184, 138, 36, .85); border-radius: 99px; overflow: hidden; background: rgba(255, 255, 255, .55); }
+.notes .nmode button { border: 0; background: none; padding: .35em 1em; font: 600 .74em var(--text); letter-spacing: .16em; text-transform: uppercase; color: #8a6212; cursor: pointer; }
+.notes .nmode button.on { background: linear-gradient(135deg, #f1d98a, #b98a24); color: #2d2008; }
 .notes .nsub { font-style: italic; color: #6d5420; font-size: .92em; margin-bottom: .3em; }
 .notes .pad { position: relative; flex: 1; min-height: 0; }
 .notes .note {
@@ -240,9 +260,15 @@ body.view-open #reader > .runes, body.ball-open #reader > .runes { display: none
   background-image: repeating-linear-gradient(180deg, transparent 0 calc(1.9em - 1px), rgba(150, 110, 30, .4) calc(1.9em - 1px) 1.9em); background-attachment: local;
 }
 .notes .note::placeholder { color: rgba(109, 84, 32, .55); font-style: italic; }
-.notes .ink { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+.notes .ink { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.notes .pad.text .ink { pointer-events: none; }
+.notes .pad.draw .ink { pointer-events: auto; cursor: url(../assets/pen-cursor.svg) 3 29, crosshair; }
+.notes .pad.draw .note { pointer-events: none; }
+.notes .pad.draw::after { content: ''; position: absolute; inset: -4px; border: 1px dashed rgba(184, 138, 36, .55); pointer-events: none; }
 .notes .nfoot { display: flex; justify-content: space-between; align-items: center; font-size: .78em; color: #9a7a30; letter-spacing: .05em; }
-.notes .nclear { border: 1px solid rgba(184, 138, 36, .7); background: rgba(255, 255, 255, .5); color: #8a6212; border-radius: 99px; padding: .3em .9em; font: 400 .95em var(--text); cursor: pointer; }
+.notes .nbtns { display: flex; gap: .45em; }
+.notes .nbtns button { border: 1px solid rgba(184, 138, 36, .7); background: rgba(255, 255, 255, .5); color: #8a6212; border-radius: 99px; padding: .3em .9em; font: 400 .95em var(--text); cursor: pointer; }
+.notes .nbtns button:hover { background: rgba(255, 255, 255, .85); }
 .filler { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.2em; }
 .filler .rune-big { font-family: var(--rune); font-size: 5em; color: #c9a44a; opacity: .5; }
 .filler .orn { position: static; transform: none; width: 30%; }
@@ -271,6 +297,9 @@ body.view-open #reader > .runes, body.ball-open #reader > .runes { display: none
 
 .measure { position: fixed; left: -9999px; top: 0; width: 50vw; height: 100vh; visibility: hidden; pointer-events: none; }
 body.portrait .measure { width: 100vw; }
+/* one column: the glass menu sits over the foot of the page, so pages whose last line matters end above it */
+body.portrait .notes, body.portrait .np { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+body.portrait .rp { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
 .measure .page { width: 100%; height: 100%; }
 
 /* ---------- glass menu ---------- */
@@ -338,12 +367,18 @@ body[data-scene="reader"] .closer, .credits-btn, body[data-scene="reader"] .goal
 @keyframes floaty { 50% { transform: translateY(-9px) scale(1); } }
 .crystal canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; }
 .ctext-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; perspective: calc(var(--d) * 1.6); pointer-events: none; }
-.ctext { position: relative; width: 0; height: 0; transform-style: preserve-3d; font-family: var(--display); font-size: clamp(20px, calc(var(--d) * .105), 44px); color: #f7f3ff; white-space: nowrap; transition: opacity .32s ease; letter-spacing: .04em;
-  text-shadow: 0 2px 3px rgba(5, 2, 25, .95), 0 0 14px rgba(140, 220, 255, .55); }
+.ctext { position: relative; width: 0; height: 0; transform-style: preserve-3d; font-family: var(--display); font-size: clamp(20px, calc(var(--d) * .105), 44px); color: #fbf8ff; white-space: nowrap; transition: opacity .32s ease; letter-spacing: .04em;
+  text-shadow: 0 0 2px #fff, 0 0 8px rgba(190, 235, 255, .95), 0 0 18px rgba(140, 200, 255, .8), 0 0 34px rgba(120, 160, 255, .6), 0 2px 3px rgba(5, 2, 25, .9); animation: cglow 2.8s ease-in-out infinite; }
+@keyframes cglow { 50% { filter: brightness(1.25) drop-shadow(0 0 6px rgba(200, 230, 255, .9)); } }
+.ctext.flat { transform-style: flat; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; width: 80%; height: auto; white-space: normal; text-align: center; }
+.ctext.flat span { position: static; transform: none !important; }
 .ctext.swap { opacity: 0; }
 .ctext span { position: absolute; left: 0; top: 0; display: inline-block; transform-origin: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-.ctext[data-kind="result"] { color: #ffe9a0; text-shadow: 0 2px 3px rgba(5, 2, 25, .95), 0 0 16px rgba(255, 220, 120, .6); }
-.ctext[data-kind="suggest"] { color: #d9f6ff; }
+.ctext[data-kind="result"] { color: #fff2c0; text-shadow: 0 0 2px #fff8e0, 0 0 8px rgba(255, 230, 150, .95), 0 0 18px rgba(255, 210, 110, .8), 0 0 36px rgba(255, 190, 80, .55), 0 2px 3px rgba(5, 2, 25, .9); }
+.ctext[data-kind="suggest"] { color: #e4fbff; }
+.crunes { position: absolute; inset: -14% -4%; overflow: hidden; pointer-events: none; }
+.crunes span { position: absolute; font-family: var(--rune); color: #f2faff; opacity: 0; line-height: 1; text-shadow: 0 0 3px #fff, 0 0 9px #fff, 0 0 16px rgba(170, 220, 255, 1), 0 0 30px rgba(120, 170, 255, .9), 0 0 50px rgba(150, 120, 255, .6); animation: crune 4s ease-in-out forwards; }
+@keyframes crune { 0% { opacity: 0; transform: translateY(14px) scale(.7); } 30% { opacity: .95; } 75% { opacity: .6; } 100% { opacity: 0; transform: translateY(-40px) scale(1.1); } }
 .ctext[data-kind="info"] { color: #e6d6ff; font-size: clamp(14px, calc(var(--d) * .07), 26px); }
 .crystal .x { position: absolute; top: 4%; right: 4%; width: 32px; height: 32px; padding: 0; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .6); background: rgba(255, 255, 255, .18); color: #fff; font-size: 20px; line-height: 1; cursor: pointer; z-index: 2; }
 .crystal .x:hover { background: rgba(255, 255, 255, .35); }

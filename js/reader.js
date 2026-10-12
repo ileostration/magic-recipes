@@ -7,6 +7,7 @@ import * as wiki from './wikibooks.js';
 import { Flipbook } from './flipbook.js';
 import { paginate, blankPage, esc } from './pages.js';
 import { attachSketch, recognize } from './sketch.js';
+import { findImage, creditHtml } from './images.js';
 
 export function createReader(app) {
   const { rec } = app;
@@ -37,7 +38,7 @@ export function createReader(app) {
   function entryFor(r) {
     counter++;
     const single = layout();
-    return { recipe: r, pages: paginate(r, counter, measure), n: counter, single };
+    return { recipe: r, pages: paginate(r, counter, measure, single), n: counter, single };
   }
   function cascadeLen(e) { return 3; }
 
@@ -107,7 +108,7 @@ export function createReader(app) {
   function openNotes(id) {
     const r = app.byId(id);
     if (!r) return;
-    const go = () => { const idx = current.pages.findIndex((p) => p.includes('data-id="' + id + '"') && p.includes('class="pad"')); const s = fb.single ? idx : Math.floor(idx / 2); fb.show(current.pages, Math.max(0, s), 'none'); wire(); say(describe()); };
+    const go = () => { const idx = current.pages.findIndex((p) => p.includes('data-id="' + id + '"') && p.includes('class="pad ')); const s = fb.single ? idx : Math.floor(idx / 2); fb.show(current.pages, Math.max(0, s), 'none'); wire(); say(describe()); };
     if (current && current.recipe.id === id) go();
     else { jumpTo(r); setTimeout(go, 1800); }
   }
@@ -115,16 +116,42 @@ export function createReader(app) {
   /* ---------- live page wiring ---------- */
   function wire() {
     root.querySelectorAll('.page.left .bm, .page.right .bm').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); toggleBookmark(b.dataset.id); }; });
-    root.querySelectorAll('.page.left .pad, .page.right .pad').forEach(wirePad);
-    root.querySelectorAll('.page.left .nclear, .page.right .nclear').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); const pad = b.closest('.notes').querySelector('.pad'); pad._sketch && pad._sketch.clear(); }; });
-    root.querySelectorAll('.page img').forEach((im) => { im.onerror = () => { im.classList.add('broken'); }; });
+    root.querySelectorAll('.page.left .notes, .page.right .notes').forEach(wireNotes);
+    root.querySelectorAll('.page.left .ph, .page.right .ph').forEach((ph) => {
+      const im = ph.querySelector('img');
+      if (im) im.onerror = () => { im.classList.add('broken'); seek(ph); };
+      if (ph.classList.contains('seeking')) seek(ph);
+    });
   }
-  function wirePad(pad) {
-    if (pad._wired) return;
-    pad._wired = true;
+  /* a picture for a photo page that has none, or whose picture would not load: the image finder, then the page is repainted in place */
+  function seek(ph) {
+    if (ph._seeking) return;
+    ph._seeking = true;
+    const r = app.byId(ph.dataset.rid) || (current && current.recipe);
+    if (!r) return;
+    ph.classList.add('seeking');
+    findImage(r).then((im) => {
+      if (!im || !ph.isConnected) { ph.classList.remove('seeking'); return; }
+      const img = new Image();
+      img.alt = r.title; img.loading = 'eager';
+      img.onload = () => {
+        ph.querySelectorAll('img').forEach((o) => o.remove());
+        ph.insertBefore(img, ph.firstChild);
+        ph.classList.remove('seeking');
+        const cr = ph.querySelector('.cr'); if (cr) cr.innerHTML = creditHtml(im, esc);
+      };
+      img.onerror = () => ph.classList.remove('seeking');
+      img.src = im.url;
+    });
+  }
+  const MODE_KEY = 'grimoire.noteMode';
+  function wireNotes(box) {
+    if (box._wired) return;
+    box._wired = true;
+    const pad = box.querySelector('.pad');
     const id = pad.dataset.id;
     const ta = pad.querySelector('textarea'), ink = pad.querySelector('canvas');
-    const count = pad.parentElement.querySelector('.ncount');
+    const count = box.querySelector('.ncount');
     const show = () => { count.textContent = ta.value.length + ' / ' + history.NOTE_MAX; };
     show();
     ta.addEventListener('input', () => { const n = history.setNote(id, { text: ta.value }); if (n.text !== ta.value) ta.value = n.text; show(); });
@@ -133,13 +160,25 @@ export function createReader(app) {
     const note = history.note(id);
     pad._sketch = attachSketch(ink, {
       initial: note.drawing,
-      onTap() { ta.focus({ preventScroll: true }); const v = ta.value.length; try { ta.setSelectionRange(v, v); } catch (x) { /* ignore */ } },
+      onTap(e) { pad._sketch.dot(e); },
       onChange(png) {
         history.setNote(id, { drawing: png, labels: [] });
         if (png) recognize(png).then((labels) => { if (labels.length) history.setNote(id, { labels }); });
       }
     });
     requestAnimationFrame(() => pad._sketch.size());
+    /* Text or Draw: the choice is remembered for every notes page */
+    const setMode = (m, focus) => {
+      pad.classList.toggle('draw', m === 'draw'); pad.classList.toggle('text', m !== 'draw');
+      box.querySelectorAll('.nmode button').forEach((b) => { const on = b.dataset.mode === m; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+      try { localStorage.setItem(MODE_KEY, m); } catch (x) { /* private mode */ }
+      if (m === 'draw') pad._sketch.size(); else if (focus) ta.focus({ preventScroll: true });
+    };
+    let saved = 'text'; try { saved = localStorage.getItem(MODE_KEY) || 'text'; } catch (x) { /* ignore */ }
+    setMode(saved, false);
+    box.querySelectorAll('.nmode button').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); setMode(b.dataset.mode, true); }; });
+    box.querySelector('.nclear').onclick = (e) => { e.stopPropagation(); pad._sketch.clear(); say('Drawing cleared'); };
+    box.querySelector('.nclear-text').onclick = (e) => { e.stopPropagation(); ta.value = ''; history.setNote(id, { text: '' }); show(); say('Notes cleared'); };
   }
   function toggleBookmark(id) {
     const on = history.toggleBookmark(id);
@@ -186,7 +225,7 @@ export function createReader(app) {
   addEventListener('resize', () => {
     if (!active || !current) return;
     clearTimeout(rt);
-    rt = setTimeout(() => { const was = fb.single, single = layout(); current.pages = paginate(current.recipe, current.n, measure); current.single = single; fb.show(current.pages, was !== single ? 0 : Math.min(fb.spread, fb.spreads - 1), 'none'); wire(); }, 150);
+    rt = setTimeout(() => { const was = fb.single, single = layout(); current.pages = paginate(current.recipe, current.n, measure, single); current.single = single; fb.show(current.pages, was !== single ? 0 : Math.min(fb.spread, fb.spreads - 1), 'none'); wire(); }, 150);
   });
 
   /* ---------- runes drifting in the margins ---------- */

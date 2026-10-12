@@ -5,6 +5,7 @@ import { history } from './history.js';
 import { Flipbook } from './flipbook.js';
 import { frame, esc } from './pages.js';
 import { recognize, sketchModel } from './sketch.js';
+import { findImage } from './images.js';
 
 const SLOTS = 10, STEP = 360 / SLOTS;
 
@@ -22,9 +23,17 @@ export function createViews(app) {
 
   /* ---------- bookmark ring ---------- */
   function cardHtml(r, k) {
-    const th = r.image && (r.image.thumb || r.image.url);
+    const im = r.image || history.image(r.id);
+    const th = im && (im.thumb || im.url);
     return '<button type="button" class="rcard" data-id="' + esc(r.id) + '" style="--a:' + (k * STEP) + 'deg">' +
-      (th ? '<img src="' + esc(th) + '" alt="" loading="lazy">' : '') + '<span>' + esc(r.title) + '</span></button>';
+      (th ? '<img src="' + esc(th) + '" alt="" loading="lazy">' : '<img alt="" class="seek">') + '<span>' + esc(r.title) + '</span></button>';
+  }
+  /* cards whose picture is missing or broken ask the image finder */
+  function seekThumbs() {
+    ring.querySelectorAll('.rcard img').forEach((im) => {
+      const fill = () => { const r = app.byId(im.closest('.rcard').dataset.id); if (r) findImage(r).then((found) => { if (found && im.isConnected) { im.classList.remove('seek'); im.src = found.thumb || found.url; } }); };
+      if (im.classList.contains('seek')) fill(); else im.onerror = fill;
+    });
   }
   function buildRing() {
     const ids = history.bookmarks().slice().reverse();
@@ -38,6 +47,7 @@ export function createViews(app) {
       let html = '';
       for (let k = 0; k < N; k++) { const r = app.byId(ids[k]); if (r) html += cardHtml(r, k - (N - 1) / 2); }
       ring.innerHTML = html;
+      seekThumbs();
       return;
     }
     /* a full wheel of ten slots; past the tenth card the next bookmark takes the first slot and so on around the whole list */
@@ -47,6 +57,7 @@ export function createViews(app) {
     let html = '';
     for (let k = f - 4; k <= f + 5; k++) { const r = app.byId(ids[((k % N) + N) % N]); if (r) html += cardHtml(r, k); }
     ring.innerHTML = html;
+    seekThumbs();
   }
   function setRot(v) {
     const N = history.bookmarks().length;

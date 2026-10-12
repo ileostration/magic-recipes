@@ -64,9 +64,17 @@ export function attachSketch(canvas, opts) {
     c.getContext('2d').drawImage(canvas, 0, 0, W, H);
     return c.toDataURL('image/png');
   }
+  function dot(e) {
+    if (!e || !e.clientX) return;
+    size();
+    const p = pos(e);
+    ctx.beginPath(); ctx.arc(p.x, p.y, ctx.lineWidth * 0.6, 0, Math.PI * 2); ctx.fillStyle = ctx.strokeStyle; ctx.fill();
+    clearTimeout(dirty);
+    dirty = setTimeout(() => opts.onChange && opts.onChange(exportPng()), 350);
+  }
   size();
   if (opts.initial) restore(opts.initial);
-  return { size, restore, clear() { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.restore(); opts.onChange && opts.onChange(''); }, isEmpty() { return !canvas.width; } };
+  return { size, restore, dot, clear() { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.restore(); opts.onChange && opts.onChange(''); }, isEmpty() { return !canvas.width; } };
 }
 
 /* ---- doodle recognition ---- */

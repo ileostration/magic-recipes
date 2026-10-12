@@ -95,7 +95,7 @@ export async function fetchRecipe(title) {
   const img = pickImage(j.parse.images);
   return {
     id: 'wb:' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-    title: name, source: 'wikibooks', url: pageUrl(title),
+    title: name, source: 'wikibooks', url: pageUrl(title), wiki: title,
     origin: tags.cuisine === 'international' ? 'Wikibooks Cookbook' : tags.cuisine.replace(/-/g, ' '),
     ...tags,
     serves: infoRow(doc, 'Servings|Yield') || '', time: infoRow(doc, 'Time') || '', difficulty: (infoRow(doc, 'Difficulty') || '').toLowerCase(),

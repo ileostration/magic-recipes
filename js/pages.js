@@ -2,6 +2,7 @@
    real column), the nutrition label and the notes page. Shared by the recipe reader and the other views. */
 import { GOALS } from './recommend.js';
 import { history } from './history.js';
+import { creditHtml } from './images.js';
 
 const DV = { kcal: 2000, protein: 50, carbs: 275, fat: 78, fibre: 28, sugar: 50 };
 export const MAX_TEXT = 5;
@@ -12,8 +13,8 @@ export const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').repl
 export function frame(cls) {
   const photo = cls === 'photo', cover = cls === 'cover-frame';
   return '<div class="frame' + (cls ? ' ' + cls : '') + '"><div class="veil-in"></div>' +
-    '<i class="orn c tl"></i><i class="orn c tr"></i><i class="orn c bl"></i><i class="orn c br"></i>' +
-    (photo || cover ? '' : '<i class="orn crest-t"></i><i class="orn crest-b"></i>') + '</div>';
+    '<i class="fo c tl"></i><i class="fo c tr"></i><i class="fo c bl"></i><i class="fo c br"></i>' +
+    (photo || cover ? '' : '<i class="fo crest-t"></i><i class="fo crest-b"></i>') + '</div>';
 }
 export const marbleClass = () => 'm' + Math.floor(Math.random() * 4) + ' o' + Math.floor(Math.random() * 4);
 
@@ -21,40 +22,56 @@ export const bmBtn = (r) => { const on = history.isBookmarked(r.id); return '<bu
   '<svg viewBox="0 0 24 32" aria-hidden="true"><path class="r1" d="M2 0h20v31l-10-7.5L2 31z"/><path class="r2" d="M5.5 2.5h13v22.5l-6.5-4.9-6.5 4.9z"/><path class="r3" d="M8 8h8M8 12.5h8" /></svg></button>'; };
 
 export function imagePage(r) {
-  const im = r.image || {};
-  const img = im.url ? '<img alt="' + esc(im.alt || r.title) + '" src="' + esc(im.url) + '" loading="eager">' : '';
-  let credit = '';
-  if (im.source === 'unsplash' && im.credit) credit = '<span class="cr">Photo: <a href="' + esc(im.credit.link) + '" target="_blank" rel="noopener">' + esc(im.credit.name) + '</a> on <a href="' + esc(im.page) + '" target="_blank" rel="noopener">Unsplash</a></span>';
-  else if (im.credit) credit = '<span class="cr">Photo: ' + esc(im.credit.artist) + ' · ' + esc(im.credit.license) + ' · <a href="' + esc(im.credit.link) + '" target="_blank" rel="noopener">Commons</a></span>';
-  return frame('photo') + '<div class="in"><div class="ph" data-rid="' + esc(r.id) + '">' + img +
-    '<div class="cap"><b>' + esc(r.title) + '</b><span>' + esc(r.origin || '') + '</span>' + credit + '</div></div></div>' + bmBtn(r);
+  const im = r.image || history.image(r.id) || null;
+  const img = im && im.url ? '<img alt="' + esc(im.alt || r.title) + '" src="' + esc(im.url) + '" loading="eager">' : '';
+  return frame('photo') + '<div class="in"><div class="ph' + (img ? '' : ' seeking') + '" data-rid="' + esc(r.id) + '">' + img +
+    '<div class="cap"><b>' + esc(r.title) + '</b><span>' + esc(r.origin || '') + '</span><span class="cr">' + creditHtml(im, esc) + '</span></div></div></div>' + bmBtn(r);
 }
 function sourceLine(r) {
   if (r.source === 'wikibooks') return '<div class="src">From the <a href="' + esc(r.url) + '" target="_blank" rel="noopener">Wikibooks Cookbook</a>, text under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.</div>';
   return '';
 }
+const DV2 = { fat: 78, satfat: 20, chol: 300, sodium: 2300, carbs: 275, fibre: 28, added: 50, protein: 50, vitd: 20, calcium: 1300, iron: 18, potassium: 4700 };
 export function nutritionPage(r) {
   const n = r.nutrition;
-  const row = (k, label, unit) => n ? '<div class="nrow"><span>' + label + '</span><b>' + n[k] + (unit || 'g') + '</b><i>' + Math.round(n[k] / DV[k] * 100) + '%</i></div>' : '';
-  const fit = n && GOALS.bodybuilding.fits(r);
-  const body = n ? '<div class="label"><div class="lhead">Nutrition</div><div class="lsub">Estimated per serving · serves ' + n.servings + '</div>' +
-    '<div class="kcal"><span>Calories</span><b>' + n.kcal + '</b></div>' +
-    row('protein', 'Protein') + row('carbs', 'Carbohydrates') + row('sugar', 'of which sugars') + row('fat', 'Fat') + row('fibre', 'Fibre') +
-    '<div class="lfoot">Percentages are of a 2,000 kcal day. Estimated from the ingredient list; real values vary with brands and portions.</div></div>' +
-    (fit ? '<div class="fit">✦ Fits a bodybuilding plate: about ' + n.kcal + ' kcal with ' + n.protein + ' g protein</div>' : '') : '<div class="label"><div class="lhead">Nutrition</div><div class="lsub">No estimate for this recipe.</div></div>';
-  return frame() + '<div class="in"><div class="np">' + body + '</div></div>' + bmBtn(r);
+  if (!n) return frame() + '<div class="in"><div class="np"><div class="label2"><div class="lhead">Nutrition Facts</div><div class="lsub">No estimate for this recipe.</div></div></div></div>' + bmBtn(r);
+  const pct = (k) => DV2[k] ? '<i>' + Math.round((n[k] || 0) / DV2[k] * 100) + '%</i>' : '<i></i>';
+  const row = (label, k, unit, cls) => '<div class="lrow' + (cls ? ' ' + cls : '') + '"><span>' + label + '</span><b>' + (n[k] == null ? '\u2013' : n[k] + unit) + '</b>' + pct(k) + '</div>';
+  const fit = GOALS.bodybuilding.fits(r);
+  const netKg = n.net_g >= 1000 ? (n.net_g / 1000).toFixed(2).replace(/\.?0+$/, '') + ' kg' : n.net_g + ' g';
+  return frame() + '<div class="in"><div class="np">' +
+    '<div class="macro"><div><b>' + n.protein + 'g</b><span>Protein</span></div><div><b>' + n.fat + 'g</b><span>Fat</span></div><div><b>' + n.carbs + 'g</b><span>Carbs</span></div><small>per serving</small></div>' +
+    '<div class="label2">' +
+      '<div class="lhead">Nutrition Facts</div>' +
+      '<div class="lrow top"><span>Serving size</span><b>1 serving (' + n.serving_g + ' g)</b><i></i></div>' +
+      '<div class="lrow top"><span>Servings per container</span><b>' + n.servings + '</b><i></i></div>' +
+      '<div class="kcal"><span>Calories</span><b>' + n.kcal + '</b></div>' +
+      '<div class="cols"><div class="col"><div class="dv">% Daily Value*</div>' +
+        row('Total Fat', 'fat', 'g') + row('Saturated Fat', 'satfat', 'g', 'sub') + row('Trans Fat', 'transfat', 'g', 'sub') +
+        row('Cholesterol', 'chol', 'mg') + row('Sodium', 'sodium', 'mg') +
+        row('Total Carbohydrate', 'carbs', 'g') + row('Dietary Fiber', 'fibre', 'g', 'sub') + row('Total Sugars', 'sugar', 'g', 'sub') + row('Added Sugars', 'added', 'g', 'sub2') +
+      '</div><div class="col"><div class="dv">% Daily Value*</div>' +
+        row('Protein', 'protein', 'g') + row('Vitamin D', 'vitd', 'mcg') + row('Calcium', 'calcium', 'mg') + row('Iron', 'iron', 'mg') + row('Potassium', 'potassium', 'mg') +
+        '<div class="lfoot">* The % Daily Value tells you how much a nutrient in a serving contributes to a daily diet. 2,000 calories a day is used for general nutrition advice. Figures are estimated from the ingredient list; real values vary with brands and portions.</div>' +
+      '</div></div>' +
+    '</div>' +
+    '<div class="ingl"><b>Ingredients:</b> ' + esc((n.ingredients || []).join(', ')) + '.</div>' +
+    '<div class="netc"><b>Net contents:</b> about ' + netKg + ' \u00b7 ' + n.servings + ' servings' + (fit ? ' \u00b7 \u2726 fits a bodybuilding plate' : '') + '</div>' +
+    '</div></div>' + bmBtn(r);
 }
 export function notesPage(r) {
   const n = history.note(r.id);
-  return frame() + '<div class="in"><div class="notes"><h2>Notes</h2><div class="nsub">Write with the keyboard, draw with a finger, pen or mouse. Saved as you go.</div>' +
-    '<div class="pad" data-id="' + esc(r.id) + '"><textarea class="note" maxlength="' + history.NOTE_MAX + '" spellcheck="true" placeholder="What did you change? Who did you cook it for?">' + esc(n.text) + '</textarea><canvas class="ink" aria-label="Drawing area"></canvas></div>' +
-    '<div class="nfoot"><span class="ncount"></span><button type="button" class="nclear">Clear drawing</button></div></div></div>' + bmBtn(r);
+  return frame() + '<div class="in"><div class="notes"><div class="nhead"><h2>Notes</h2>' +
+    '<div class="nmode" role="group" aria-label="Notes mode"><button type="button" data-mode="text" class="on" aria-pressed="true">Text</button><button type="button" data-mode="draw" aria-pressed="false">Draw</button></div></div>' +
+    '<div class="nsub">Type on the lines, or switch to Draw and sketch with a finger, pen or mouse. Saved as you go.</div>' +
+    '<div class="pad text" data-id="' + esc(r.id) + '"><textarea class="note" maxlength="' + history.NOTE_MAX + '" spellcheck="true" placeholder="What did you change? Who did you cook it for?">' + esc(n.text) + '</textarea><canvas class="ink" aria-label="Drawing area"></canvas></div>' +
+    '<div class="nfoot"><span class="ncount"></span><span class="nbtns"><button type="button" class="nclear-text">Clear notes</button><button type="button" class="nclear">Clear drawing</button></span></div></div></div>' + bmBtn(r);
 }
 export const fillerPage = () => frame() + '<div class="in"><div class="filler"><span class="rune-big">\u{10900}</span><svg class="orn" viewBox="0 0 200 20" aria-hidden="true"><use href="#divider"/></svg></div></div>';
 export const blankPage = () => frame() + '<div class="in"></div>';
 
 /* split a recipe into pages that fit `measure`, an offscreen box the size of one column */
-export function paginate(r, n, measure) {
+export function paginate(r, n, measure, single) {
   const head = '<div class="no">Recipe No. ' + n + '</div><h2 class="gold' + (r.title.length > 26 ? ' long' : '') + '">' + esc(r.title) + '</h2>' +
     '<div class="meta">' + esc([r.serves, r.time].filter(Boolean).join(' · ')) + '</div>' + (r.intro ? '<p class="intro">' + esc(r.intro) + '</p>' : '');
   const blocks = [];
@@ -88,6 +105,6 @@ export function paginate(r, n, measure) {
   flush(false);
   measure.innerHTML = '';
   const pages = [imagePage(r), ...text, nutritionPage(r), notesPage(r)];
-  if (pages.length % 2 === 1) pages.push(fillerPage());
+  if (!single && pages.length % 2 === 1) pages.push(fillerPage()); /* two columns want an even count; one column does not */
   return pages;
 }

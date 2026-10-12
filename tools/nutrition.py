@@ -134,20 +134,133 @@ def servings_of(s):
     m = re.search(r'(\d+)', s or '')
     return int(m.group(1)) if m else 4
 
+# ---- nutrient profiles beyond the macros, per 100 g: sat = share of the fat that is saturated, trans g, cholesterol mg,
+#      sodium mg, vitamin D mcg, calcium mg, iron mg, potassium mg, added = share of the sugars that count as added ----
+PROF = {
+    'salt':      dict(sat=0, trans=0, chol=0, sodium=38758, vitd=0, calcium=24, iron=0.3, potassium=8, added=0),
+    'soy':       dict(sat=0, trans=0, chol=0, sodium=5500, vitd=0, calcium=20, iron=1.5, potassium=220, added=0),
+    'fishsauce': dict(sat=0, trans=0, chol=0, sodium=7800, vitd=0, calcium=40, iron=0.8, potassium=290, added=0),
+    'miso':      dict(sat=0.2, trans=0, chol=0, sodium=3700, vitd=0, calcium=57, iron=2.5, potassium=210, added=0),
+    'sauce':     dict(sat=0.15, trans=0, chol=2, sodium=1000, vitd=0, calcium=20, iron=0.5, potassium=200, added=0.8),
+    'leaven':    dict(sat=0, trans=0, chol=0, sodium=10600, vitd=0, calcium=5900, iron=0, potassium=20, added=0),
+    'soda':      dict(sat=0, trans=0, chol=0, sodium=27360, vitd=0, calcium=0, iron=0, potassium=0, added=0),
+    'stock':     dict(sat=0.3, trans=0, chol=1, sodium=350, vitd=0, calcium=5, iron=0.1, potassium=100, added=0),
+    'cured':     dict(sat=0.36, trans=0.1, chol=70, sodium=1500, vitd=0.5, calcium=10, iron=1.0, potassium=250, added=0),
+    'redmeat':   dict(sat=0.4, trans=0.3, chol=75, sodium=65, vitd=0.3, calcium=10, iron=2.2, potassium=320, added=0),
+    'poultry':   dict(sat=0.28, trans=0, chol=85, sodium=70, vitd=0.1, calcium=12, iron=0.9, potassium=250, added=0),
+    'fish':      dict(sat=0.22, trans=0, chol=55, sodium=60, vitd=10, calcium=15, iron=0.5, potassium=400, added=0),
+    'shellfish': dict(sat=0.2, trans=0, chol=150, sodium=200, vitd=0.1, calcium=60, iron=2.0, potassium=220, added=0),
+    'egg':       dict(sat=0.33, trans=0, chol=370, sodium=140, vitd=2.0, calcium=56, iron=1.8, potassium=140, added=0),
+    'eggwhite':  dict(sat=0, trans=0, chol=0, sodium=166, vitd=0, calcium=7, iron=0.1, potassium=163, added=0),
+    'eggyolk':   dict(sat=0.35, trans=0, chol=1085, sodium=48, vitd=5.4, calcium=129, iron=2.7, potassium=109, added=0),
+    'butter':    dict(sat=0.63, trans=0.3, chol=215, sodium=400, vitd=1.5, calcium=24, iron=0, potassium=24, added=0),
+    'cream':     dict(sat=0.63, trans=0.1, chol=110, sodium=40, vitd=0.8, calcium=65, iron=0.1, potassium=95, added=0),
+    'creamcheese': dict(sat=0.6, trans=0, chol=100, sodium=320, vitd=0.3, calcium=97, iron=0.4, potassium=130, added=0),
+    'milk':      dict(sat=0.6, trans=0, chol=10, sodium=45, vitd=1.0, calcium=120, iron=0, potassium=150, added=0),
+    'cheese':    dict(sat=0.63, trans=0, chol=95, sodium=650, vitd=0.5, calcium=700, iron=0.5, potassium=90, added=0),
+    'parmesan':  dict(sat=0.63, trans=0, chol=70, sodium=1500, vitd=0.5, calcium=1100, iron=0.8, potassium=125, added=0),
+    'feta':      dict(sat=0.7, trans=0, chol=90, sodium=1100, vitd=0.4, calcium=490, iron=0.6, potassium=62, added=0),
+    'oliveoil':  dict(sat=0.14, trans=0, chol=0, sodium=2, vitd=0, calcium=1, iron=0.6, potassium=1, added=0),
+    'vegoil':    dict(sat=0.1, trans=0.1, chol=0, sodium=0, vitd=0, calcium=0, iron=0, potassium=0, added=0),
+    'coconutoil': dict(sat=0.87, trans=0, chol=0, sodium=0, vitd=0, calcium=0, iron=0, potassium=0, added=0),
+    'lard':      dict(sat=0.39, trans=0.5, chol=95, sodium=0, vitd=2.5, calcium=0, iron=0, potassium=0, added=0),
+    'mayo':      dict(sat=0.15, trans=0, chol=40, sodium=600, vitd=0, calcium=8, iron=0.2, potassium=20, added=0.5),
+    'tahini':    dict(sat=0.14, trans=0, chol=0, sodium=115, vitd=0, calcium=420, iron=9, potassium=410, added=0),
+    'peanutbutter': dict(sat=0.2, trans=0, chol=0, sodium=400, vitd=0, calcium=45, iron=1.9, potassium=560, added=0.5),
+    'grain':     dict(sat=0.2, trans=0, chol=0, sodium=5, vitd=0, calcium=20, iron=1.2, potassium=110, added=0),
+    'bread':     dict(sat=0.25, trans=0, chol=0, sodium=490, vitd=0, calcium=150, iron=3.6, potassium=115, added=0.6),
+    'pastry':    dict(sat=0.5, trans=0.5, chol=20, sodium=400, vitd=0, calcium=15, iron=1.5, potassium=70, added=0.8),
+    'biscuit':   dict(sat=0.45, trans=0.3, chol=5, sodium=500, vitd=0, calcium=30, iron=2, potassium=120, added=1),
+    'pulse':     dict(sat=0.15, trans=0, chol=0, sodium=6, vitd=0, calcium=100, iron=6, potassium=1000, added=0),
+    'cannedpulse': dict(sat=0.15, trans=0, chol=0, sodium=240, vitd=0, calcium=45, iron=1.5, potassium=290, added=0),
+    'tofu':      dict(sat=0.14, trans=0, chol=0, sodium=7, vitd=0, calcium=350, iron=5.4, potassium=120, added=0),
+    'veg':       dict(sat=0.15, trans=0, chol=0, sodium=20, vitd=0, calcium=40, iron=0.8, potassium=300, added=0),
+    'leafy':     dict(sat=0.15, trans=0, chol=0, sodium=80, vitd=0, calcium=99, iron=2.7, potassium=560, added=0),
+    'potato':    dict(sat=0.1, trans=0, chol=0, sodium=6, vitd=0, calcium=12, iron=0.8, potassium=420, added=0),
+    'tomato':    dict(sat=0.15, trans=0, chol=0, sodium=15, vitd=0, calcium=10, iron=0.3, potassium=237, added=0),
+    'cannedtomato': dict(sat=0.1, trans=0, chol=0, sodium=130, vitd=0, calcium=30, iron=1, potassium=290, added=0),
+    'pickle':    dict(sat=0.1, trans=0, chol=0, sodium=1500, vitd=0, calcium=50, iron=0.5, potassium=150, added=0),
+    'fruit':     dict(sat=0.1, trans=0, chol=0, sodium=1, vitd=0, calcium=15, iron=0.3, potassium=200, added=0),
+    'driedfruit': dict(sat=0.1, trans=0, chol=0, sodium=10, vitd=0, calcium=50, iron=1.9, potassium=750, added=0),
+    'nuts':      dict(sat=0.1, trans=0, chol=0, sodium=1, vitd=0, calcium=100, iron=3, potassium=600, added=0),
+    'sesame':    dict(sat=0.14, trans=0, chol=0, sodium=11, vitd=0, calcium=975, iron=14.5, potassium=468, added=0),
+    'coconut':   dict(sat=0.9, trans=0, chol=0, sodium=20, vitd=0, calcium=14, iron=2.4, potassium=356, added=0),
+    'coconutmilk': dict(sat=0.9, trans=0, chol=0, sodium=15, vitd=0, calcium=16, iron=1.6, potassium=260, added=0),
+    'chocolate': dict(sat=0.6, trans=0, chol=8, sodium=20, vitd=0, calcium=73, iron=8, potassium=560, added=1),
+    'cocoa':     dict(sat=0.6, trans=0, chol=0, sodium=21, vitd=0, calcium=128, iron=13.9, potassium=1524, added=0),
+    'sugar':     dict(sat=0, trans=0, chol=0, sodium=1, vitd=0, calcium=1, iron=0, potassium=2, added=1),
+    'condensed': dict(sat=0.6, trans=0, chol=34, sodium=127, vitd=0.2, calcium=284, iron=0.2, potassium=371, added=1),
+    'spice':     dict(sat=0.3, trans=0, chol=0, sodium=50, vitd=0, calcium=500, iron=20, potassium=1000, added=0),
+    'herb':      dict(sat=0.1, trans=0, chol=0, sodium=50, vitd=0, calcium=150, iron=4, potassium=500, added=0),
+    'alcohol':   dict(sat=0, trans=0, chol=0, sodium=5, vitd=0, calcium=8, iron=0.4, potassium=100, added=0),
+    'none':      dict(sat=0, trans=0, chol=0, sodium=0, vitd=0, calcium=0, iron=0, potassium=0, added=0),
+}
+RULES = [
+    (('salt',), 'salt'), (('soy sauce', 'oyster sauce', 'hoisin', 'gochujang', 'worcestershire'), 'soy'), (('fish sauce',), 'fishsauce'), (('miso',), 'miso'),
+    (('baking powder',), 'leaven'), (('bicarbonate', 'baking soda'), 'soda'), (('stock', 'broth', 'dashi'), 'stock'),
+    (('ketchup', 'sriracha', 'hot sauce', 'mustard', 'bbq sauce', 'barbecue sauce', 'curry paste', 'harissa', 'pesto', 'tamarind'), 'sauce'),
+    (('bacon', 'pancetta', 'guanciale', 'chorizo', 'sausage', 'ham', 'prosciutto'), 'cured'),
+    (('chicken', 'turkey'), 'poultry'), (('beef', 'ribeye', 'brisket', 'chuck', 'steak', 'lamb', 'pork', 'veal', 'mince'), 'redmeat'),
+    (('salmon', 'tuna', 'cod', 'haddock', 'fish', 'sea bass', 'anchov', 'bonito'), 'fish'), (('prawn', 'shrimp', 'mussel', 'clam', 'squid', 'scallop', 'crab', 'surimi', 'lobster'), 'shellfish'),
+    (('egg white',), 'eggwhite'), (('egg yolk',), 'eggyolk'), (('egg',), 'egg'),
+    (('butter', 'ghee', 'margarine'), 'butter'), (('cream cheese', 'mascarpone'), 'creamcheese'), (('cream',), 'cream'), (('parmesan', 'pecorino'), 'parmesan'), (('feta', 'halloumi'), 'feta'),
+    (('milk', 'yogurt', 'buttermilk', 'cottage cheese', 'ricotta'), 'milk'), (('condensed',), 'condensed'), (('cheese', 'mozzarella', 'cheddar', 'gruy', 'emmental', 'paneer'), 'cheese'),
+    (('olive oil',), 'oliveoil'), (('coconut oil',), 'coconutoil'), (('lard',), 'lard'), (('mayonnaise',), 'mayo'), (('tahini',), 'tahini'), (('peanut butter',), 'peanutbutter'), (('oil',), 'vegoil'),
+    (('bread', 'bun', 'baguette', 'brioche', 'pita', 'naan', 'tortilla', 'breadcrumbs', 'panko', 'wrappers', 'nori'), 'bread'), (('pastry', 'filo', 'phyllo', 'shortcrust'), 'pastry'), (('digestive', 'graham', 'ladyfinger', 'savoiardi'), 'biscuit'),
+    (('canned chickpeas', 'canned beans'), 'cannedpulse'), (('chickpea', 'lentil', 'beans', 'split peas', 'edamame'), 'pulse'), (('tofu', 'tempeh'), 'tofu'),
+    (('flour', 'rice', 'noodle', 'pasta', 'spaghetti', 'macaroni', 'penne', 'rigatoni', 'lasagne', 'quinoa', 'couscous', 'bulgur', 'oats', 'cornmeal', 'masa', 'polenta', 'cornflour', 'cornstarch'), 'grain'),
+    (('spinach', 'kale', 'lettuce', 'romaine', 'cabbage', 'kimchi', 'broccoli'), 'leafy'), (('potato',), 'potato'), (('chopped tomatoes', 'passata', 'tomato purée', 'tomato puree', 'tomato paste', 'tomato sauce'), 'cannedtomato'), (('tomato',), 'tomato'),
+    (('capers', 'olives', 'preserved lemon', 'pickled'), 'pickle'), (('raisins', 'sultanas', 'dates', 'apricot', 'desiccated'), 'driedfruit'), (('sesame',), 'sesame'), (('coconut milk', 'coconut cream'), 'coconutmilk'), (('coconut',), 'coconut'),
+    (('almond', 'walnut', 'pecan', 'pistachio', 'hazelnut', 'cashew', 'peanut', 'pine nut', 'chia'), 'nuts'), (('cocoa', 'matcha'), 'cocoa'), (('chocolate',), 'chocolate'),
+    (('sugar', 'honey', 'syrup', 'molasses', 'jam', 'treacle'), 'sugar'), (('wine', 'marsala', 'rum', 'brandy', 'kirsch', 'sake', 'mirin', 'shaoxing', 'beer'), 'alcohol'),
+    (('cumin', 'paprika', 'turmeric', 'masala', 'curry powder', 'chilli powder', 'chili powder', 'cayenne', 'cinnamon', 'nutmeg', 'cardamom', 'cloves', 'allspice', 'star anise', 'fennel seed', 'mustard seed', 'coriander seed', 'cumin seed', 'saffron', 'five spice', 'ginger powder', 'garlic powder', 'onion powder', 'sumac', "za'atar", 'spice', 'pepper', 'peppercorn', 'dried chillies'), 'spice'),
+    (('coriander', 'cilantro', 'parsley', 'basil', 'mint', 'dill', 'thyme', 'rosemary', 'oregano', 'bay', 'sage', 'chives', 'tarragon', 'lemongrass'), 'herb'),
+    (('water', 'ice', 'coffee', 'espresso', 'gelatine', 'gelatin', 'yeast', 'vanilla', 'cream of tartar'), 'none'),
+]
+def profile(key):
+    for words, name in RULES:
+        if any(w in key for w in words): return PROF[name]
+    return PROF['veg']
+
+UNIT_WORDS = r'(?:kg|g|grams?|ml|l|litres?|liters?|oz|ounces?|lbs?|pounds?|cups?|tbsp|tablespoons?|tsp|teaspoons?|cm|inch(?:es)?|cloves?|large|medium|small|whole|pieces?|slices?|sheets?|stalks?|sprigs?|sticks?|heads?|bunch(?:es)?|cans?|tins?|fillets?|pinch(?:es)?|dash|handfuls?|portions?|thick|thin|generous|heaped|level|scant)'
+
+def ingredient_name(line):
+    """the ingredient as it would read on a packet: quantities, units and preparation notes stripped"""
+    t = re.sub(r'\([^)]*\)', ' ', line)
+    t = re.sub(r'^\s*(?:about |approx\.? |roughly )?(?:[\d½¼¾⅓⅔⅛⅜⅝⅞./x×-]+\s*)*(?:' + UNIT_WORDS + r'\b\s*)*(?:of\s+)?', '', t, flags=re.I)
+    t = re.split(r',|;| plus | to serve| for | and extra| about ', t)[0].strip(' .')
+    return t[:1].upper() + t[1:] if t else line
+
 def estimate(recipe):
     tot = [0, 0, 0, 0, 0, 0]
-    matched = 0
+    ext = dict(sat=0, trans=0, chol=0, sodium=0, vitd=0, calcium=0, iron=0, potassium=0, added=0)
+    matched = 0; total_g = 0; weights = []
     for line in recipe['ingredients']:
         grams, key, _ = parse_line(line)
         if key and grams:
             matched += 1
             vals = T[key][:6]
             for i in range(6): tot[i] += vals[i] * grams / 100
+            pr = profile(key)
+            fat_g = vals[3] * grams / 100; sugar_g = vals[5] * grams / 100
+            ext['sat'] += fat_g * pr['sat']; ext['added'] += sugar_g * pr['added']
+            for k in ('trans', 'chol', 'sodium', 'vitd', 'calcium', 'iron', 'potassium'): ext[k] += pr[k] * grams / 100
+            total_g += grams
+            weights.append((grams, ingredient_name(line)))
+        else:
+            weights.append((0, ingredient_name(line)))
     n = servings_of(recipe.get('serves'))
     per = [v / n for v in tot]
+    e = {k: v / n for k, v in ext.items()}
+    names = []
+    for g, nm in sorted(weights, key=lambda w: -w[0]):
+        if nm and nm.lower() not in [x.lower() for x in names]: names.append(nm)
     return {
         'kcal': round(per[0]), 'protein': round(per[1]), 'carbs': round(per[2]), 'fat': round(per[3]), 'fibre': round(per[4]), 'sugar': round(per[5]),
-        'servings': n, 'coverage': round(matched / max(1, len(recipe['ingredients'])), 2)
+        'satfat': round(e['sat'], 1), 'transfat': round(e['trans'], 1), 'chol': round(e['chol']), 'sodium': round(e['sodium']), 'added': round(e['added']),
+        'vitd': round(e['vitd'], 1), 'calcium': round(e['calcium']), 'iron': round(e['iron'], 1), 'potassium': round(e['potassium']),
+        'servings': n, 'serving_g': round(total_g / n), 'net_g': round(total_g), 'ingredients': names,
+        'coverage': round(matched / max(1, len(recipe['ingredients'])), 2)
     }
 
 def main():

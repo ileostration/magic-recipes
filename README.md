@@ -42,18 +42,20 @@ Tunables live at the top of `js/recommend.js`: `DWELL_MS` (10 000), `SET_SIZE` (
 
 **Opening page.** With history, the book opens to the recipe that best matches the reader's recency-weighted taste profile; without it, to a crowd-pleaser.
 
-**Nutrition.** `python3 tools/nutrition.py` estimates calories, protein, carbohydrates, sugar, fat and fibre per serving from each ingredient line using a compact per-100 g table, and writes `data/nutrition.json`. The label page after each recipe shows the figures as estimates.
+**Nutrition.** `python3 tools/nutrition.py` estimates, per serving, calories, protein, carbohydrates, fat, saturated and trans fat, cholesterol, sodium, fibre, total and added sugars, vitamin D, calcium, iron and potassium from each ingredient line, using a compact per-100 g table plus nutrient profiles per food class; it also works out the serving weight, the net weight of the whole dish and the ingredient list in packet order (by weight). It writes `data/nutrition.json`. The page after each recipe shows a macro box (protein, fat, carbs per serving) above a two-column Nutrition Facts panel with % Daily Values, the ingredient list and the net contents, all marked as estimates.
 
-**Bookmarks and notes.** The ribbon flush with the top of every page bookmarks a recipe (or press `b`). The glass menu's first item opens the bookmark ring: cards on a turning wheel (drag or scroll; past ten cards the wheel wraps around the whole list), or, with the wand, a table-of-contents list with page turns. Every recipe ends with a notes page: tap the lines to type, drag to draw with a finger, pen or mouse; both save as you go. The menu's pen item opens the planner, one cell per note, searchable by what you wrote and by what you drew (drawings are labelled in the browser by a Quick, Draw! doodle classifier fetched once from a CDN).
+**Bookmarks and notes.** The ribbon flush with the top of every page bookmarks a recipe (or press `b`). The glass menu's first item opens the bookmark ring: cards on a turning wheel (drag or scroll; past ten cards the wheel wraps around the whole list), or, with the wand, a table-of-contents list with page turns. Every recipe ends with a notes page with a Text / Draw switch (remembered between pages): in Text you type on the lines; in Draw the pointer becomes a wooden pen (`assets/pen-cursor.svg`) and you sketch over them with a finger, pen or mouse. Both save as you go; Clear notes and Clear drawing empty one or the other. The menu's pen item opens the planner, one cell per note, searchable by what you wrote and by what you drew (drawings are labelled in the browser by a Quick, Draw! doodle classifier fetched once from a CDN).
 
 Reading history lives in `localStorage` only (`js/history.js`). The Credits panel has a **Forget my history** button.
 
 ## Recipe data
 
 - `data/batch-*.json` are the hand-written source files: 100 popular dishes from around the world. Ingredient lists are plain facts; methods are written in our own words with the real process, temperatures and timings. See `data/RECIPE_GUIDE.md` for the schema and the copyright rules.
-- `data/images-*.json` hold one Unsplash photo per recipe (URL, photographer, links). Seven dishes have no clear match on Unsplash and are marked `"uncertain": true`: Korean fried chicken, massaman curry, beef bourguignon, coq au vin, feijoada, bobotie, bulgogi and matcha mille crêpe cake use the closest honest photo.
-- `assets/cards/` are the thirty tarot cards shown around the crystal (beef, cake, chicken, fish, rice and soup suits); each names a dish in the book. `data/batch-cards.json` holds the eleven recipes written so every card leads somewhere.
+- `data/images-*.json` hold one Unsplash photo per recipe (URL, photographer, links). A few dishes have no clear match on Unsplash and are marked `"uncertain": true` (Korean fried chicken, massaman curry, beef bourguignon, coq au vin, feijoada, bobotie, bulgogi, matcha mille crêpe cake, dan dan noodles, char siu) and use the closest honest photo.
+- Every recipe must have a picture. The build refuses a bundled recipe without one, and at run time `js/images.js` finds a picture for anything that still lacks one (live Wikibooks recipes, or a photo that fails to load): the recipe's own Cookbook page images, then the Wikipedia article's lead picture, then a Wikimedia Commons search, each credited under the photo and cached in the browser for a month.
+- `assets/cards/` are the fifty tarot cards shown around the crystal (beef, cake, chicken, fish, rice, soup, bread, noodle, pork and lamb suits); each names a dish in the book. `data/batch-cards.json` and `data/batch-cards2.json` hold the recipes written so every card leads somewhere.
 - `assets/orn/` are the engraved acanthus ornaments (corners, head and tail pieces) lifted from the owner's filigree reference sheet, recoloured gold; every page frame is built from them.
+- `assets/marble-*.webp` are four tiles cut from the owner's marble photograph (seams crossfaded, each tile flipped differently), so the pages are real stone and no two share a pattern.
 - Build order after editing data: `python3 tools/nutrition.py`, `python3 tools/similarity.py` (needs `pip install scikit-learn numpy`), then `node tools/build-data.mjs`, which validates every tag, merges photos, nutrition and neighbours, and writes `data/recipes.js`.
 - `node tools/check-wiki.mjs` checks each recipe's `wiki` title against the live Wikibooks API and reports missing pages and available photos. With `--bake` it writes the photo URL and credit into the batch files; rebuild afterwards. The titles were set from memory and have not yet been verified online.
 
@@ -61,7 +63,7 @@ Reading history lives in `localStorage` only (`js/history.js`). The Credits pane
 
 The crystal ball also searches the [Wikibooks Cookbook](https://en.wikibooks.org/wiki/Cookbook:Table_of_Contents) through the public MediaWiki API (`js/wikibooks.js`). Its text is CC BY-SA 4.0 and each live recipe page in the book links back to its source and names the licence. Photos are hot-linked from Wikimedia Commons with the author and licence shown under the picture. Bundled recipes that name a Cookbook page borrow that page's photo the same way.
 
-The site needs to reach these hosts for the live features: `en.wikibooks.org`, `commons.wikimedia.org`, `upload.wikimedia.org`, plus `fonts.googleapis.com` and `fonts.gstatic.com` for type. Without them the book still works with its bundled recipes and placeholder tints.
+The site needs to reach these hosts for the live features: `en.wikibooks.org`, `en.wikipedia.org`, `commons.wikimedia.org`, `upload.wikimedia.org`, `images.unsplash.com`, plus `fonts.googleapis.com` and `fonts.gstatic.com` for type. Without them the book still works with its bundled recipes and placeholder tints.
 
 ## The meadow
 
@@ -69,7 +71,7 @@ The site needs to reach these hosts for the live features: `en.wikibooks.org`, `
 
 Page turns are real leaves: a temporary 3D element lifts off one column carrying the old page on its front, reveals the page beneath as it rises, and lands on the other column showing the new page on its back; only then does the column beneath take the content over (`js/flipbook.js`). Between recipes three leaves turn in a short cascade.
 
-The marble pages use four procedurally generated vein textures (`assets/marble-*.webp`); every page picks one at random with a random offset, so no two pages share a pattern. Phoenician letters drift up from the margins now and then (`Noto Sans Phoenician`). The crystal ball is a volumetric fragment shader (`js/crystal.js`): rays refract into a glass sphere and march through 3D noise, so the glow ribbons sit at real depths; its text is laid on a cylinder in CSS 3D. It runs only while the ball is open.
+The marble pages use the four tiles cut from the owner's marble photograph (`assets/marble-*.webp`); every page picks one at random with a random offset, so no two pages share a pattern. Phoenician letters drift up from the margins now and then (`Noto Sans Phoenician`), and glow around the crystal while it is open. The crystal ball is a volumetric fragment shader (`js/crystal.js`): rays refract into a glass sphere and march through 3D noise, so the glow ribbons sit at real depths; its words are laid on a cylinder in CSS 3D (re-laid once the display face has loaded, flat where CSS 3D is missing) and glow. It runs only while the ball is open.
 
 ## Layout
 
@@ -89,9 +91,10 @@ js/views.js          bookmark ring / list, notes planner and search
 js/ball.js           crystal overlay: messages inside the sphere, tarot cards, asking
 js/crystal.js        volumetric glass-sphere shader + 3D curved text
 js/sketch.js         drawing on the notes pad, doodle recognition
-js/history.js        localStorage memory: reads, searches, goal, bookmarks, notes
+js/history.js        localStorage memory: reads, searches, goal, bookmarks, notes, found pictures
+js/images.js         automatic picture finder (Wikibooks page, Wikipedia, Commons)
 js/grass.js          three.js meadow with book weight and ground texture
-assets/              marble textures, ground texture, tarot cards
+assets/              marble tiles, ground texture, tarot cards, ornaments, pen cursor
 data/                taxonomy, recipe batches, generated recipes.js
 tools/               build and link-check scripts
 ```

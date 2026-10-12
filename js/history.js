@@ -3,7 +3,7 @@
 const KEY = 'grimoire.v2';
 const MAX_READS = 60, MAX_SEARCHES = 30, MAX_SEEN = 300, NOTE_MAX = 520;
 
-function blank() { return { reads: [], searches: [], seen: [], live: {}, bookmarks: [], notes: {}, goal: null }; }
+function blank() { return { reads: [], searches: [], seen: [], live: {}, bookmarks: [], notes: {}, goal: null, images: {} }; }
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
@@ -89,6 +89,15 @@ export const history = {
   },
   allNotes() { return Object.keys(this.data.notes).map((id) => ({ id, ...this.note(id) })).sort((a, b) => b.at - a.at); },
 
+  /* pictures found automatically for recipes that had none; kept for 30 days */
+  image(id) { const im = (this.data.images || {})[id]; return im && Date.now() - (im.at || 0) < 30 * 864e5 ? im : null; },
+  cacheImage(id, im) {
+    const d = this.data; d.images = d.images || {};
+    d.images[id] = { ...im, at: Date.now() };
+    const ids = Object.keys(d.images);
+    if (ids.length > 80) { ids.sort((a, b) => d.images[a].at - d.images[b].at); ids.slice(0, ids.length - 80).forEach((k) => delete d.images[k]); }
+    save(d);
+  },
   cacheLive(recipe) {
     const d = this.data;
     d.live = d.live || {};
@@ -98,5 +107,5 @@ export const history = {
     save(d);
   },
   liveRecipes() { return Object.values(this.data.live || {}); },
-  clear() { const keep = { bookmarks: this.data.bookmarks, notes: this.data.notes }; this.data = { ...blank(), ...keep }; save(this.data); }
+  clear() { const keep = { bookmarks: this.data.bookmarks, notes: this.data.notes, images: this.data.images }; this.data = { ...blank(), ...keep }; save(this.data); }
 };

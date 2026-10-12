@@ -13,7 +13,11 @@ const TAROT = [
   'roast-chicken', 'chicken-pot-pie', 'butter-chicken', 'chicken-katsu-curry', 'chicken-noodle-soup',
   'grilled-salmon', 'fish-and-chips', 'miso-glazed-black-cod', 'whole-steamed-fish', 'baked-cod-with-herbs',
   'seafood-paella', 'mushroom-risotto', 'egg-fried-rice', 'bibimbap', 'jollof-rice',
-  'tomato-basil-soup', 'french-onion-soup', 'pumpkin-soup', 'mushroom-cream-soup', 'minestrone'
+  'tomato-basil-soup', 'french-onion-soup', 'pumpkin-soup', 'mushroom-cream-soup', 'minestrone',
+  'sourdough-loaf', 'croissant', 'baguette', 'milk-bread', 'cinnamon-rolls',
+  'dan-dan-noodles', 'udon-soup', 'shoyu-ramen', 'pad-thai', 'spaghetti-carbonara',
+  'tonkatsu', 'char-siu', 'braised-pork-belly', 'barbecue-pork-ribs', 'pork-and-chive-dumplings',
+  'rack-of-lamb', 'lamb-chops', 'lamb-curry', 'lamb-tagine', 'shepherds-pie'
 ];
 const SPOTS = [ /* % of the scene box: a loose hand of three either side of the sphere, stepped so every name stays readable */
   { x: 2, y: 0, r: -12 }, { x: 16, y: 27, r: 8 }, { x: 1, y: 54, r: -6 },
@@ -29,16 +33,40 @@ export function createBall(app) {
   const tarot = wrap.querySelector('.tarot');
   const form = wrap.querySelector('form'), input = wrap.querySelector('input'), reveal = wrap.querySelector('.reveal');
   const gl = createCrystal(wrap.querySelector('canvas'));
-  let msgs = [], idx = -1, timer = 0, pending = 0, results = [];
+  const runes = document.createElement('div'); runes.className = 'crunes'; runes.setAttribute('aria-hidden', 'true'); scene.insertBefore(runes, scene.firstChild);
+  let msgs = [], idx = -1, timer = 0, pending = 0, results = [], runeT = 0;
+  /* browsers without CSS 3D get the same words laid flat */
+  if (!(window.CSS && CSS.supports && CSS.supports('transform-style', 'preserve-3d'))) textEl.classList.add('flat');
 
   function radius() { return crystal.getBoundingClientRect().width / 2 * 0.98; }
+  function lay(m) {
+    textEl.dataset.kind = m.kind;
+    curvedText(textEl, m.text, radius());
+    /* if the glyphs measured as nothing (fonts still loading, box not laid out yet) measure again on the next frame */
+    const w = textEl.firstChild && textEl.firstChild.getBoundingClientRect().width;
+    if (!w) requestAnimationFrame(() => { if (current() === m) curvedText(textEl, m.text, radius()); });
+  }
   function paint(m) {
     textEl.classList.add('swap');
-    setTimeout(() => {
-      textEl.dataset.kind = m.kind;
-      curvedText(textEl, m.text, radius());
-      textEl.classList.remove('swap');
-    }, 320);
+    setTimeout(() => { lay(m); textEl.classList.remove('swap'); }, 320);
+  }
+  /* the display face arrives after the first paint on a cold cache: lay the words out again in it */
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (api.isOpen() && current()) lay(current()); });
+  /* Phoenician letters popping and glowing around the sphere, never over the words inside it */
+  const RUNE_FROM = 0x10900, RUNE_TO = 0x1091B;
+  function popRune() {
+    if (wrap.hidden || document.hidden || runes.childElementCount > 14) return;
+    const box = runes.getBoundingClientRect(), ball = crystal.getBoundingClientRect();
+    const el = document.createElement('span');
+    el.textContent = String.fromCodePoint(RUNE_FROM + Math.floor(Math.random() * (RUNE_TO - RUNE_FROM + 1)));
+    let x, y, tries = 0;
+    do { x = Math.random() * box.width; y = Math.random() * box.height; tries++; }
+    while (tries < 12 && Math.hypot(x - (ball.left - box.left + ball.width / 2), y - (ball.top - box.top + ball.height / 2)) < ball.width * 0.56);
+    el.style.left = x + 'px'; el.style.top = y + 'px';
+    el.style.fontSize = (20 + Math.random() * 26) + 'px';
+    el.style.animationDuration = (2.6 + Math.random() * 2) + 's';
+    el.addEventListener('animationend', () => el.remove());
+    runes.appendChild(el);
   }
   function cycle() {
     clearTimeout(timer);
@@ -115,7 +143,7 @@ export function createBall(app) {
   form.addEventListener('submit', (e) => { e.preventDefault(); ask(input.value); });
   reveal.addEventListener('click', (e) => { e.preventDefault(); const m = current(); if (results.length) { if (m && m.kind === 'result') m.action(); else app.reader.jumpTo(results[0]); } else ask(input.value); });
   input.addEventListener('keydown', (e) => e.stopPropagation());
-  addEventListener('resize', () => { if (api.isOpen() && current()) curvedText(textEl, current().text, radius()); });
+  addEventListener('resize', () => { if (api.isOpen() && current()) lay(current()); });
 
   const api = {
     open(invite) {
@@ -125,6 +153,7 @@ export function createBall(app) {
       document.body.classList.add('ball-open');
       requestAnimationFrame(() => wrap.classList.add('on'));
       gl && gl.start();
+      clearInterval(runeT); runeT = setInterval(popRune, 360);
       idle(invite);
       if (matchMedia('(pointer: fine)').matches) setTimeout(() => input.focus({ preventScroll: true }), 650);
       app.setHash('crystal');
@@ -133,6 +162,7 @@ export function createBall(app) {
       if (wrap.hidden) return;
       wrap.classList.remove('on'); document.body.classList.remove('ball-open');
       clearTimeout(timer); gl && gl.stop();
+      clearInterval(runeT); runes.innerHTML = '';
       setTimeout(() => { wrap.hidden = true; }, 500);
       if (app.reader.active && app.reader.current) app.setHash('r/' + app.reader.current.recipe.id);
     },
