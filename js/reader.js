@@ -18,7 +18,10 @@ export function createReader(app) {
   const fb = new Flipbook(area);
   const runesLayer = root.querySelector('.runes');
 
-  let current = null, trail = [], shownAt = 0, counter = 0, busy = false, lockT = 0, active = false;
+  /* the trail: every recipe shown this session in order, with a cursor. Back and forward walk it, so the reader
+     meets the same recipes in the same order both ways; a new recommendation is only made past its end, and only
+     the crystal ball starts a fresh trail. */
+  let current = null, trail = [], pos = -1, shownAt = 0, counter = 0, busy = false, lockT = 0, active = false;
 
   const portrait = () => innerWidth / innerHeight < 0.95;
   function layout() { const p = portrait(); document.body.classList.toggle('portrait', p); fb.single = p; return p; }
@@ -58,7 +61,7 @@ export function createReader(app) {
     document.body.dataset.scene = 'reader';
     if (fromLanding) { fb.left.innerHTML = blankPage(); fb.right.innerHTML = blankPage(); }
     const e = entryFor(r);
-    trail = [];
+    trail = [e]; pos = 0;
     lock(1000);
     land(e, fromLanding ? 'next' : 'none', 0);
     app.menu.refresh();
@@ -66,44 +69,53 @@ export function createReader(app) {
   function close() {
     active = false;
     root.hidden = true;
-    current = null; trail = [];
+    current = null; trail = []; pos = -1;
     say('');
   }
   async function next() {
     if (!active || busy || fb.busy || !current) return;
     if (fb.spread < fb.spreads - 1) { lock(900); await fb.show(current.pages, fb.spread + 1, 'next'); wire(); say(describe()); return; }
     const dwell = performance.now() - shownAt;
+    if (pos < trail.length - 1) { if (dwell >= DWELL_MS) rec.noteFlip(current.recipe, dwell); goTo(pos + 1, 1); return; } /* forward along the trail: the same recipe as before */
     rec.noteFlip(current.recipe, dwell);
     if (rec.wantsBall()) { app.ball.open('The pages blur past. What are you really hungry for?'); rec.quick = 0; return; }
     const got = rec.next();
     if (!got) { app.ball.open('That is all the grimoire knows about ' + (rec.seed ? rec.seed.title : 'that') + '. Ask it for something else.'); rec.quick = 0; return; }
     goForward(got.recipe);
   }
-  function goForward(r) {
-    trail.push(current); if (trail.length > 30) trail.shift();
+  /* a new recipe after the current one. reset: the crystal ball starts the trail over; otherwise it is slotted in
+     and whatever lay ahead stays ahead */
+  function goForward(r, reset) {
     const e = entryFor(r);
+    if (reset) { trail = [e]; pos = 0; }
+    else { trail.splice(pos + 1, 0, e); pos++; if (trail.length > 60) { trail.shift(); pos--; } }
     lock(1500);
     land(e, { cascade: cascadeLen(e), dir: 1 }, 0);
     if (e.recipe.source === 'wikibooks') say('From the Wikibooks Cookbook');
   }
+  function goTo(i, dir) {
+    const e = trail[i];
+    pos = i;
+    lock(1500);
+    const single = layout();
+    if (e.single !== single) { e.pages = paginate(e.recipe, e.n, measure, single); e.single = single; }
+    land(e, { cascade: cascadeLen(e), dir }, dir < 0 ? Math.ceil(e.pages.length / (single ? 1 : 2)) - 1 : 0);
+  }
   async function prev() {
     if (!active || busy || fb.busy || !current) return;
     if (fb.spread > 0) { lock(900); await fb.show(current.pages, fb.spread - 1, 'prev'); wire(); say(describe()); return; }
-    const back = trail.pop();
-    if (!back) { app.closeBook(); return; }
-    lock(1500);
-    const single = layout();
-    if (back.single !== single) { back.pages = paginate(back.recipe, back.n, measure); back.single = single; }
-    land(back, { cascade: cascadeLen(back), dir: -1 }, Math.ceil(back.pages.length / (fb.single ? 1 : 2)) - 1);
+    if (pos <= 0) { app.closeBook(); return; }
+    goTo(pos - 1, -1);
   }
-  function jumpTo(r) {
+  /* reset is true when the crystal ball chose: the trail starts again from this recipe */
+  function jumpTo(r, reset) {
     app.ball.close();
     app.views.closeAll();
     if (!active) { app.openReader(r); return; }
-    if (busy || fb.busy) { setTimeout(() => jumpTo(r), 300); return; }
-    if (current && current.recipe.id === r.id) return;
+    if (busy || fb.busy) { setTimeout(() => jumpTo(r, reset), 300); return; }
+    if (current && current.recipe.id === r.id) { if (reset) { trail = [current]; pos = 0; } return; }
     rec.shown.add(r.id);
-    goForward(r);
+    goForward(r, reset);
   }
   function openNotes(id) {
     const r = app.byId(id);

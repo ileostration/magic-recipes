@@ -12,6 +12,7 @@
    Quick flips (leaving before DWELL_MS) walk the tiers in sets of SET_SIZE; the ball appears on flip BALL_AT.
    Reading a recipe resets the walk and re-seeds from that recipe. */
 import { STAPLES, tagText } from './tagger.js';
+import { estimate } from './nutrition.js';
 
 export const DWELL_MS = 10000;
 export const SET_SIZE = 3;
@@ -131,7 +132,7 @@ export class Recommender {
   }
   addToPool(recipes) {
     const ids = new Set(this.all.map((r) => r.id));
-    for (const r of recipes) if (!ids.has(r.id)) { this.all.push(r); ids.add(r.id); }
+    for (const r of recipes) if (!ids.has(r.id)) { if (!r.nutrition) { try { r.nutrition = estimate(r); } catch (e) { /* a page with no ingredient list */ } } this.all.push(r); ids.add(r.id); }
     this.tiers = null;
   }
   restoreSeed() {
@@ -220,6 +221,10 @@ export class Recommender {
     this.shown = new Set();
     this.tiers = rank(this.seed, this.pool, null);
     let list = [...this.tiers.A, ...this.tiers.B, ...this.tiers.C];
+    /* a dish named outright comes first: "lasagna" opens the lasagne, not another pasta */
+    const words = q.toLowerCase().split(/[^a-z]+/).filter((w) => w.length > 2);
+    const named = (r) => { const t = r.title.toLowerCase(); return words.reduce((a, w) => a + (new RegExp('(^|[^a-z])' + w.slice(0, Math.max(3, w.length - 1))).test(t) ? 1 : 0), 0); };
+    list = list.map((r, i) => [r, named(r), i]).sort((a, b) => b[1] - a[1] || a[2] - b[2]).map((x) => x[0]);
     if (g && !list.length) {
       /* "bodybuilding recipes": no dish named, so the goal pool itself is the answer, best fits first */
       const near = (r) => (r.nutrition ? Math.abs(r.nutrition.kcal - 500) + Math.max(0, 40 - r.nutrition.protein) * 6 : 999);

@@ -1,6 +1,7 @@
 /* Page markup for the reader: photo page, recipe text pages (paginated against a measuring box the size of a
    real column), the nutrition label and the notes page. Shared by the recipe reader and the other views. */
 import { GOALS } from './recommend.js';
+import { estimate } from './nutrition.js';
 import { history } from './history.js';
 import { creditHtml } from './images.js';
 
@@ -33,30 +34,31 @@ function sourceLine(r) {
 }
 const DV2 = { fat: 78, satfat: 20, chol: 300, sodium: 2300, carbs: 275, fibre: 28, added: 50, protein: 50, vitd: 20, calcium: 1300, iron: 18, potassium: 4700 };
 export function nutritionPage(r) {
-  const n = r.nutrition;
-  if (!n) return frame() + '<div class="in"><div class="np"><div class="label2"><div class="lhead">Nutrition Facts</div><div class="lsub">No estimate for this recipe.</div></div></div></div>' + bmBtn(r);
-  const pct = (k) => DV2[k] ? '<i>' + Math.round((n[k] || 0) / DV2[k] * 100) + '%</i>' : '<i></i>';
-  const row = (label, k, unit, cls) => '<div class="lrow' + (cls ? ' ' + cls : '') + '"><span>' + label + '</span><b>' + (n[k] == null ? '\u2013' : n[k] + unit) + '</b>' + pct(k) + '</div>';
+  const n = r.nutrition || (r.nutrition = estimate(r));
+  const num = (v) => (v == null || isNaN(v) ? 0 : v);
+  const pct = (k) => (DV2[k] ? '<i>' + Math.round(num(n[k]) / DV2[k] * 100) + '%</i>' : '<i></i>');
+  const row = (label, k, unit, cls) => '<div class="lrow' + (cls ? ' ' + cls : '') + '"><span>' + label + '</span><b>' + num(n[k]) + unit + '</b>' + pct(k) + '</div>';
   const fit = GOALS.bodybuilding.fits(r);
   const netKg = n.net_g >= 1000 ? (n.net_g / 1000).toFixed(2).replace(/\.?0+$/, '') + ' kg' : n.net_g + ' g';
+  const cov = n.coverage != null && n.coverage < 1 ? ' Read from ' + Math.round(n.coverage * 100) + '% of the ingredient lines.' : '';
   return frame() + '<div class="in"><div class="np">' +
-    '<div class="macro"><div><b>' + n.protein + 'g</b><span>Protein</span></div><div><b>' + n.fat + 'g</b><span>Fat</span></div><div><b>' + n.carbs + 'g</b><span>Carbs</span></div><small>per serving</small></div>' +
+    '<div class="macro"><div class="mhead">Macros</div><div><b>' + num(n.protein) + 'g</b><span>Protein</span></div><div><b>' + num(n.fat) + 'g</b><span>Fat</span></div><div><b>' + num(n.carbs) + 'g</b><span>Carbs</span></div><small>per serving</small></div>' +
     '<div class="label2">' +
       '<div class="lhead">Nutrition Facts</div>' +
-      '<div class="lrow top"><span>Serving size</span><b>1 serving (' + n.serving_g + ' g)</b><i></i></div>' +
-      '<div class="lrow top"><span>Servings per container</span><b>' + n.servings + '</b><i></i></div>' +
-      '<div class="kcal"><span>Calories</span><b>' + n.kcal + '</b></div>' +
+      '<div class="lrow top"><span>Serving size</span><b>1 serving (' + num(n.serving_g) + ' g)</b><i></i></div>' +
+      '<div class="lrow top"><span>Servings per container</span><b>' + num(n.servings) + '</b><i></i></div>' +
+      '<div class="kcal"><span>Calories</span><b>' + num(n.kcal) + '</b></div>' +
       '<div class="cols"><div class="col"><div class="dv">% Daily Value*</div>' +
         row('Total Fat', 'fat', 'g') + row('Saturated Fat', 'satfat', 'g', 'sub') + row('Trans Fat', 'transfat', 'g', 'sub') +
         row('Cholesterol', 'chol', 'mg') + row('Sodium', 'sodium', 'mg') +
         row('Total Carbohydrate', 'carbs', 'g') + row('Dietary Fiber', 'fibre', 'g', 'sub') + row('Total Sugars', 'sugar', 'g', 'sub') + row('Added Sugars', 'added', 'g', 'sub2') +
       '</div><div class="col"><div class="dv">% Daily Value*</div>' +
         row('Protein', 'protein', 'g') + row('Vitamin D', 'vitd', 'mcg') + row('Calcium', 'calcium', 'mg') + row('Iron', 'iron', 'mg') + row('Potassium', 'potassium', 'mg') +
-        '<div class="lfoot">* The % Daily Value tells you how much a nutrient in a serving contributes to a daily diet. 2,000 calories a day is used for general nutrition advice. Figures are estimated from the ingredient list; real values vary with brands and portions.</div>' +
+        '<div class="lfoot">* The % Daily Value tells you how much a nutrient in a serving contributes to a daily diet. 2,000 calories a day is used for general nutrition advice. Worked out from this recipe\u2019s own ingredient list; real values vary with brands and portions.' + cov + '</div>' +
       '</div></div>' +
     '</div>' +
     '<div class="ingl"><b>Ingredients:</b> ' + esc((n.ingredients || []).join(', ')) + '.</div>' +
-    '<div class="netc"><b>Net contents:</b> about ' + netKg + ' \u00b7 ' + n.servings + ' servings' + (fit ? ' \u00b7 \u2726 fits a bodybuilding plate' : '') + '</div>' +
+    '<div class="netc"><b>Net contents:</b> about ' + netKg + ' \u00b7 ' + num(n.servings) + ' servings' + (fit ? ' \u00b7 \u2726 fits a bodybuilding plate' : '') + '</div>' +
     '</div></div>' + bmBtn(r);
 }
 export function notesPage(r) {

@@ -36,13 +36,15 @@ GitHub Pages is free for non-commercial sites, which this is.
 
 Nothing looser than tier C is ever shown. Quick flips (leaving before 10 seconds) walk the tiers in sets of three. On the tenth quick flip, or when the tiers run out, the crystal ball appears. Reading a recipe resets the walk and re-seeds from that recipe. Searching re-seeds from the query and the same tier logic applies to the results.
 
+**The trail.** The reader keeps every recipe shown this session in order, with a cursor. Turning back shows the previous recipes exactly as they came; turning forward again shows the same ones in the same order, and a new recommendation is only made past the end of the trail. A bookmark or planner jump slots the recipe in after the current one. Only the crystal ball starts a fresh trail. In the crystal, Enter and Reveal do the same thing: the top match opens at once, and only when nothing matches, here or on Wikibooks, does the sphere keep the floor to say so.
+
 Tunables live at the top of `js/recommend.js`: `DWELL_MS` (10 000), `SET_SIZE` (3), `BALL_AT` (10).
 
 **Goals.** A search such as "bodybuilding recipes", "high protein" or "gym" switches the reader into a goal. The pool then narrows to recipes whose estimated nutrition fits the goal (bodybuilding: at least 40 g protein and roughly 380 to 700 kcal per serving, or recipes tagged `goal: ["bodybuilding"]`). A pill at the top of the page shows the active goal and clears it on click.
 
 **Opening page.** With history, the book opens to the recipe that best matches the reader's recency-weighted taste profile; without it, to a crowd-pleaser.
 
-**Nutrition.** `python3 tools/nutrition.py` estimates, per serving, calories, protein, carbohydrates, fat, saturated and trans fat, cholesterol, sodium, fibre, total and added sugars, vitamin D, calcium, iron and potassium from each ingredient line, using a compact per-100 g table plus nutrient profiles per food class; it also works out the serving weight, the net weight of the whole dish and the ingredient list in packet order (by weight). It writes `data/nutrition.json`. The page after each recipe shows a macro box (protein, fat, carbs per serving) above a two-column Nutrition Facts panel with % Daily Values, the ingredient list and the net contents, all marked as estimates.
+**Nutrition.** Every label is worked out from the recipe's own ingredient lines by `js/nutrition.js`: each line is read for its quantity (weights, volumes, counts of items, pinches and handfuls, "juice of a lemon", "about 2 kg in total", "170 g each") and its food, the food is looked up in `data/foods.js` (per-100 g figures for about 430 ingredients, after USDA FoodData Central: calories, protein, carbohydrate, fat, fibre, sugars, saturated and trans fat, cholesterol, sodium, vitamin D, calcium, iron, potassium, plus portion sizes, spoon densities and cooking rules), and the totals are divided by the servings. Spices, herbs and salt are foods like any other and carry their sodium and minerals; oil "for deep-frying" counts as the share the food takes up; bones for stock are strained out; dry rice and pasta take on water for the net weight. The build runs it for the bundled recipes and reports any line it cannot place; the browser runs the same code for recipes fetched live from Wikibooks. `FDC_API_KEY=… node tools/fetch-foods.mjs` refreshes the table from FoodData Central (free key from api.data.gov). The page after each recipe shows a Macros box (protein, fat, carbs per serving) above a two-column Nutrition Facts panel with % Daily Values, the ingredient list in packet order and the net contents.
 
 **Bookmarks and notes.** The ribbon flush with the top of every page bookmarks a recipe (or press `b`). The glass menu's first item opens the bookmark ring: cards on a turning wheel (drag or scroll; past ten cards the wheel wraps around the whole list), or, with the wand, a table-of-contents list with page turns. Every recipe ends with a notes page with a Text / Draw switch (remembered between pages): in Text you type on the lines; in Draw the pointer becomes a wooden pen (`assets/pen-cursor.svg`) and you sketch over them with a finger, pen or mouse. Both save as you go; Clear notes and Clear drawing empty one or the other. The menu's pen item opens the planner, one cell per note, searchable by what you wrote and by what you drew (drawings are labelled in the browser by a Quick, Draw! doodle classifier fetched once from a CDN).
 
@@ -56,7 +58,8 @@ Reading history lives in `localStorage` only (`js/history.js`). The Credits pane
 - `assets/cards/` are the fifty tarot cards shown around the crystal (beef, cake, chicken, fish, rice, soup, bread, noodle, pork and lamb suits); each names a dish in the book. `data/batch-cards.json` and `data/batch-cards2.json` hold the recipes written so every card leads somewhere.
 - `assets/orn/` are the engraved acanthus ornaments (corners, head and tail pieces) lifted from the owner's filigree reference sheet, recoloured gold; every page frame is built from them.
 - `assets/marble-*.webp` are four tiles cut from the owner's marble photograph (seams crossfaded, each tile flipped differently), so the pages are real stone and no two share a pattern.
-- Build order after editing data: `python3 tools/nutrition.py`, `python3 tools/similarity.py` (needs `pip install scikit-learn numpy`), then `node tools/build-data.mjs`, which validates every tag, merges photos, nutrition and neighbours, and writes `data/recipes.js`.
+- `data/foods.js` is the per-100 g food table the nutrition reader uses (see **Nutrition** above). Add a row there and a matching rule in `js/nutrition.js` whenever the build reports an ingredient line it could not place.
+- Build order after editing data: `python3 tools/similarity.py` (needs `pip install scikit-learn numpy`), then `node tools/build-data.mjs`, which validates every tag, merges photos and neighbours, works out the nutrition and writes `data/recipes.js`.
 - `node tools/check-wiki.mjs` checks each recipe's `wiki` title against the live Wikibooks API and reports missing pages and available photos. With `--bake` it writes the photo URL and credit into the batch files; rebuild afterwards. The titles were set from memory and have not yet been verified online.
 
 ### Live recipes
@@ -91,12 +94,13 @@ js/views.js          bookmark ring / list, notes planner and search
 js/ball.js           crystal overlay: messages inside the sphere, tarot cards, asking
 js/crystal.js        volumetric glass-sphere shader + 3D curved text
 js/sketch.js         drawing on the notes pad, doodle recognition
+js/nutrition.js      nutrition from the ingredient lines (build and browser)
 js/history.js        localStorage memory: reads, searches, goal, bookmarks, notes, found pictures
 js/images.js         automatic picture finder (Wikibooks page, Wikipedia, Commons)
 js/grass.js          three.js meadow with book weight and ground texture
 assets/              marble tiles, ground texture, tarot cards, ornaments, pen cursor
-data/                taxonomy, recipe batches, generated recipes.js
-tools/               build and link-check scripts
+data/                taxonomy, recipe batches, food table, generated recipes.js
+tools/               build, similarity, food-table refresh and link-check scripts
 ```
 
 ## Credits

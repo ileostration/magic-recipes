@@ -133,14 +133,19 @@ const SWEET_ONLY_FLAVORS = new Set(['chocolate', 'vanilla', 'caramel', 'coffee',
 
 function norm(s) { return ' ' + String(s || '').toLowerCase().replace(/[_\-]/g, ' ').replace(/\s+/g, ' ') + ' '; }
 
+/* a keyword counts only at the start of a word, with at most three letters after it ("noodle" in "noodles",
+   "lasagn" in "lasagna"), so "pho" is not found in "xylophone" nor "corn" in "unicorn" */
+const kwRe = new Map();
+function hasWord(text, kw) {
+  let re = kwRe.get(kw);
+  if (!re) { re = new RegExp('(^|[^a-z])' + kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[a-z]{0,3}(?![a-z])'); kwRe.set(kw, re); }
+  return re.test(text);
+}
 function hits(text, table) {
   const out = [];
   for (const key in table) {
     let best = 0;
-    for (const kw of table[key]) {
-      const i = text.indexOf(kw);
-      if (i >= 0) best = Math.max(best, kw.length);
-    }
+    for (const kw of table[key]) if (hasWord(text, kw)) best = Math.max(best, kw.length);
     if (best) out.push([key, best]);
   }
   return out.sort((a, b) => b[1] - a[1]).map((x) => x[0]);
@@ -153,7 +158,7 @@ export function tagText(title, body) {
   const dishT = hits(t, DISH), dishB = hits(b, DISH);
   const dish = dishT[0] || dishB[0] || null;
   let flavors = [...new Set([...hits(t, FLAVORS), ...hits(b, FLAVORS)])];
-  if (dish && SAVOURY_DISHES.has(dish)) flavors = flavors.filter((f) => !SWEET_ONLY_FLAVORS.has(f) || t.indexOf(f) >= 0);
+  if (dish && SAVOURY_DISHES.has(dish)) flavors = flavors.filter((f) => !SWEET_ONLY_FLAVORS.has(f) || hasWord(t, f));
   const mains = [...new Set([...hits(t, MAINS), ...hits(b, MAINS)])].slice(0, 6);
   const cuisine = hits(all, CUISINE)[0] || 'international';
   const catHit = hits(t, CATEGORY)[0];

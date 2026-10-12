@@ -97,30 +97,38 @@ export function createBall(app) {
     results = [];
     setMessages(list);
   }
-  function answer(list, note) {
-    results = list;
-    const m = list.slice(0, 8).map((r) => ({ text: r.title, kind: 'result', action: () => app.reader.jumpTo(r) }));
-    if (note) m.unshift({ text: note, kind: 'info' });
-    if (!list.length) m.push({ text: 'Nothing for that. Try another craving', kind: 'info' });
-    setMessages(m);
-  }
+  /* Enter and Reveal do the same thing: find the dish and open it. Only when nothing matches, here or in the
+     Wikibooks Cookbook, does the crystal keep the floor to say so. */
   async function ask(q) {
     q = (q || '').trim();
-    if (!q) return;
+    if (!q) { input.focus(); return; }
     input.value = q;
     const id = ++pending;
     const local = rec.search(q);
     app.renderGoal && app.renderGoal();
-    let note = rec.goal && GOALS[rec.goal].words.test(q) ? GOALS[rec.goal].label + ' plates, about 500 kcal and 40 g protein' : (local.length ? '' : 'Searching the Wikibooks Cookbook');
-    answer(local, note);
-    if (navigator.onLine === false) return;
-    const live = await wiki.searchRecipes(q, 6);
+    if (local.length) { results = local; app.reader.jumpTo(local[0], true); return; }
+    results = [];
+    setMessages([{ text: 'Searching the Wikibooks Cookbook', kind: 'info' }]);
+    let live = null;
+    if (navigator.onLine !== false) live = await wiki.searchRecipes(q, 6);
     if (id !== pending) return;
-    if (!live) { if (!local.length) answer([], ''); return; }
-    live.forEach((r) => history.cacheLive(r));
-    rec.addToPool(live);
-    answer(rec.search(q), '');
-    app.renderGoal && app.renderGoal();
+    if (live && live.length) {
+      live.forEach((r) => history.cacheLive(r));
+      rec.addToPool(live);
+      const hits = rec.search(q);
+      app.renderGoal && app.renderGoal();
+      results = hits.length ? hits : live;
+      app.reader.jumpTo(results[0], true);
+      return;
+    }
+    nothing();
+  }
+  function nothing() {
+    const list = [{ text: 'Nothing for that, my dood', kind: 'info' }];
+    suggestions().forEach((s) => list.push({ text: s, kind: 'suggest', action: () => ask(s) }));
+    results = [];
+    setMessages(list);
+    input.select();
   }
   function act() {
     const m = current();
@@ -139,9 +147,9 @@ export function createBall(app) {
   crystal.addEventListener('click', (e) => { if (e.target.closest('.x')) return; act(); });
   wrap.querySelector('.x').addEventListener('click', () => api.close());
   wrap.querySelector('.dim').addEventListener('click', () => api.close());
-  tarot.addEventListener('click', (e) => { const c = e.target.closest('.tcard'); if (c) { const r = app.byId(c.dataset.id); if (r) app.reader.jumpTo(r); } });
+  tarot.addEventListener('click', (e) => { const c = e.target.closest('.tcard'); if (c) { const r = app.byId(c.dataset.id); if (r) app.reader.jumpTo(r, true); } });
   form.addEventListener('submit', (e) => { e.preventDefault(); ask(input.value); });
-  reveal.addEventListener('click', (e) => { e.preventDefault(); const m = current(); if (results.length) { if (m && m.kind === 'result') m.action(); else app.reader.jumpTo(results[0]); } else ask(input.value); });
+  reveal.addEventListener('click', (e) => { e.preventDefault(); ask(input.value); });
   input.addEventListener('keydown', (e) => e.stopPropagation());
   addEventListener('resize', () => { if (api.isOpen() && current()) lay(current()); });
 
