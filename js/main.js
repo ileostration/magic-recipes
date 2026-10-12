@@ -65,15 +65,15 @@ menu.addEventListener('click', (e) => {
 app.menu.refresh();
 
 document.getElementById('closer').addEventListener('click', () => app.closeBook());
+function renderGoal() { document.getElementById('goal').hidden = !app.rec.goal; }
+app.renderGoal = renderGoal;
 document.getElementById('goal').addEventListener('click', () => { app.rec.setGoal(null); renderGoal(); });
-function renderGoal() { const g = app.rec.goal; const pill = document.getElementById('goal'); pill.hidden = !g; }
 renderGoal();
-setInterval(renderGoal, 1000);
 
 const panel = document.getElementById('credits');
 document.getElementById('credits-btn').addEventListener('click', () => { panel.classList.add('on'); panel.setAttribute('aria-hidden', 'false'); });
 document.getElementById('credits-close').addEventListener('click', () => { panel.classList.remove('on'); panel.setAttribute('aria-hidden', 'true'); });
-document.getElementById('forget').addEventListener('click', () => { history.clear(); app.rec.seed = null; app.rec.setGoal(null); app.rec.shown.clear(); document.getElementById('forget').textContent = 'Forgotten'; });
+document.getElementById('forget').addEventListener('click', () => { history.clear(); app.rec.seed = null; app.rec.setGoal(null); app.rec.shown.clear(); renderGoal(); app.menu.refresh(); document.getElementById('forget').textContent = 'Forgotten'; });
 panel.addEventListener('click', (e) => { if (e.target === panel) { panel.classList.remove('on'); panel.setAttribute('aria-hidden', 'true'); } });
 
 /* deep links: #r/<id> opens the reader straight away; anything else is the landing scene */

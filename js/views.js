@@ -30,27 +30,43 @@ export function createViews(app) {
     const ids = history.bookmarks().slice().reverse();
     const N = ids.length;
     ringWrap.classList.toggle('empty', !N);
-    if (!N) { ring.innerHTML = ''; return; }
+    if (!N) { ring.innerHTML = ''; front = null; return; }
+    if (N <= SLOTS) {
+      /* a hand of cards fanned in front of the reader */
+      if (front === -1 && ring.childElementCount === N) return;
+      front = -1;
+      let html = '';
+      for (let k = 0; k < N; k++) { const r = app.byId(ids[k]); if (r) html += cardHtml(r, k - (N - 1) / 2); }
+      ring.innerHTML = html;
+      return;
+    }
+    /* a full wheel of ten slots; past the tenth card the next bookmark takes the first slot and so on around the whole list */
     const f = Math.round(-rot / STEP);
     if (front === f && ring.childElementCount) return;
     front = f;
     let html = '';
-    if (N <= SLOTS) {
-      const step = 360 / N;
-      for (let k = 0; k < N; k++) { const r = app.byId(ids[k]); if (r) html += cardHtml(r, k * step / STEP); }
-    } else {
-      for (let k = f - 4; k <= f + 5; k++) { const r = app.byId(ids[((k % N) + N) % N]); if (r) html += cardHtml(r, k); }
-    }
+    for (let k = f - 4; k <= f + 5; k++) { const r = app.byId(ids[((k % N) + N) % N]); if (r) html += cardHtml(r, k); }
     ring.innerHTML = html;
   }
-  function setRot(v) { rot = v; ring.style.setProperty('--rot', rot + 'deg'); buildRing(); }
-  let dragX = null, dragRot = 0, moved = false;
-  ringWrap.addEventListener('pointerdown', (e) => { dragX = e.clientX; dragRot = rot; moved = false; ringWrap.setPointerCapture(e.pointerId); });
-  ringWrap.addEventListener('pointermove', (e) => { if (dragX == null) return; const dx = e.clientX - dragX; if (Math.abs(dx) > 4) moved = true; setRot(dragRot + dx * 0.35); });
-  ringWrap.addEventListener('pointerup', (e) => { dragX = null; const c = e.target.closest('.rcard'); if (c && !moved) { const r = app.byId(c.dataset.id); if (r) app.reader.jumpTo(r); } });
-  ringWrap.addEventListener('pointercancel', () => { dragX = null; });
-  ringWrap.addEventListener('wheel', (e) => { e.preventDefault(); const d = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX; setRot(rot - d * 0.25); }, { passive: false });
-  ringWrap.addEventListener('click', (e) => { const c = e.target.closest('.rcard'); if (c && !moved) { const r = app.byId(c.dataset.id); if (r) app.reader.jumpTo(r); } });
+  function setRot(v) {
+    const N = history.bookmarks().length;
+    if (N && N <= SLOTS) { const lim = STEP * 0.5; v = Math.max(-lim, Math.min(lim, v)); } /* a hand of cards only nudges; the full wheel turns freely */
+    rot = v; ring.style.setProperty('--rot', rot + 'deg'); buildRing();
+  }
+  /* turning the wheel works anywhere on the page: drag, swipe or scroll */
+  let dragX = null, dragRot = 0, moved = false, lastJump = 0;
+  const cardsMode = () => marksMode === 'cards' && !marks.hidden;
+  marks.addEventListener('pointerdown', (e) => { if (!cardsMode() || e.target.closest('.menu')) return; dragX = e.clientX; dragRot = rot; moved = false; });
+  marks.addEventListener('pointermove', (e) => { if (dragX == null) return; const dx = e.clientX - dragX; if (Math.abs(dx) > 4) moved = true; setRot(dragRot + dx * 0.35); });
+  const endDrag = () => { dragX = null; };
+  marks.addEventListener('pointerup', endDrag); marks.addEventListener('pointercancel', endDrag); marks.addEventListener('pointerleave', endDrag);
+  marks.addEventListener('wheel', (e) => { if (!cardsMode()) return; e.preventDefault(); const d = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX; setRot(rot - d * 0.25); }, { passive: false });
+  marks.addEventListener('click', (e) => {
+    const c = e.target.closest('.rcard');
+    if (!c || moved || performance.now() - lastJump < 500) { moved = false; return; }
+    lastJump = performance.now();
+    const r = app.byId(c.dataset.id); if (r) app.reader.jumpTo(r);
+  });
 
   /* ---------- table of contents ---------- */
   function tocPages() {
@@ -139,7 +155,7 @@ export function createViews(app) {
     openView = 'marks';
     marks.hidden = false;
     document.body.classList.add('view-open');
-    rot = 0; front = null; buildRing(); ring.style.setProperty('--rot', '0deg');
+    rot = 0; front = null; ring.style.setProperty('--rot', '0deg'); buildRing();
     toc.single = innerWidth / innerHeight < 0.95;
     toc.show(tocPages(), 0, 'none');
     setMarksMode(marksMode);

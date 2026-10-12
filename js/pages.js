@@ -7,15 +7,18 @@ const DV = { kcal: 2000, protein: 50, carbs: 275, fat: 78, fibre: 28, sugar: 50 
 export const MAX_TEXT = 5;
 export const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 
-/* every page gets the same ornamental frame: four acanthus corners, a top centre-piece and a 50% veil over the marble */
+/* every page gets the same engraved frame: four acanthus corners, a head and tail piece (not on photo pages),
+   and a 50% white veil over the marble inside the rule */
 export function frame(cls) {
+  const photo = cls === 'photo', cover = cls === 'cover-frame';
   return '<div class="frame' + (cls ? ' ' + cls : '') + '"><div class="veil-in"></div>' +
-    ['tl', 'tr', 'bl', 'br'].map((c) => '<svg class="corner ' + c + '" viewBox="0 0 120 120" aria-hidden="true"><use href="#acanthus"/></svg>').join('') +
-    '<svg class="crest" viewBox="0 0 220 60" aria-hidden="true"><use href="#crest"/></svg></div>';
+    '<i class="orn c tl"></i><i class="orn c tr"></i><i class="orn c bl"></i><i class="orn c br"></i>' +
+    (photo || cover ? '' : '<i class="orn crest-t"></i><i class="orn crest-b"></i>') + '</div>';
 }
 export const marbleClass = () => 'm' + Math.floor(Math.random() * 4) + ' o' + Math.floor(Math.random() * 4);
 
-export const bmBtn = (r) => '<button class="bm' + (history.isBookmarked(r.id) ? ' on' : '') + '" type="button" data-id="' + esc(r.id) + '" aria-pressed="' + history.isBookmarked(r.id) + '" aria-label="Bookmark ' + esc(r.title) + '"><svg viewBox="0 0 24 32" aria-hidden="true"><use href="#bookmark"/></svg></button>';
+export const bmBtn = (r) => { const on = history.isBookmarked(r.id); return '<button class="bm' + (on ? ' on' : '') + '" type="button" data-id="' + esc(r.id) + '" aria-pressed="' + on + '" aria-label="' + (on ? 'Remove bookmark: ' : 'Bookmark ') + esc(r.title) + '">' +
+  '<svg viewBox="0 0 24 32" aria-hidden="true"><path class="r1" d="M2 0h20v31l-10-7.5L2 31z"/><path class="r2" d="M5.5 2.5h13v22.5l-6.5-4.9-6.5 4.9z"/><path class="r3" d="M8 8h8M8 12.5h8" /></svg></button>'; };
 
 export function imagePage(r) {
   const im = r.image || {};

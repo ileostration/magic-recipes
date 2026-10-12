@@ -6,6 +6,7 @@
 <title>The Grimoire of Delicacies</title>
 <meta name="description" content="A white marble grimoire in a meadow that opens to what you crave.">
 <meta name="color-scheme" content="light">
+<meta name="theme-color" content="#0a1a07">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caesar+Dressing&family=Afacad+Flux:wght@300..700&family=Noto+Sans+Phoenician&display=swap">
@@ -21,46 +22,9 @@
     <linearGradient id="goldv" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#e9cd75"/><stop offset=".5" stop-color="#b98a24"/><stop offset="1" stop-color="#8a6212"/>
     </linearGradient>
-    <!-- acanthus corner: engraved scrolls and leaves hugging two edges (top-left orientation; mirrored for the others) -->
-    <g id="acanthus">
-      <g fill="none" stroke="#fff8dc" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity=".9" transform="translate(.8 .8)">
-        <path d="M4 6c30-3 56 0 84 10c14 5 22 14 18 22c-3 6-11 6-14 0c-2-5 3-9 8-7"/>
-        <path d="M6 4c-3 30 0 56 10 84c5 14 14 22 22 18c6-3 6-11 0-14c-5-2-9 3-7 8"/>
-      </g>
-      <g fill="none" stroke="url(#goldv)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4 6c30-3 56 0 84 10c14 5 22 14 18 22c-3 6-11 6-14 0c-2-5 3-9 8-7"/>
-        <path d="M6 4c-3 30 0 56 10 84c5 14 14 22 22 18c6-3 6-11 0-14c-5-2-9 3-7 8"/>
-        <path d="M30 12c8-8 20-6 26 2c-8 1-16 4-26-2z"/>
-        <path d="M52 15c9-6 20-3 24 6c-9-1-17 1-24-6z"/>
-        <path d="M12 30c-8 8-6 20 2 26c1-8 4-16-2-26z"/>
-        <path d="M15 52c-6 9-3 20 6 24c-1-9 1-17-6-24z"/>
-        <path d="M6 6c6 6 12 8 20 8M6 6c6 6 8 12 8 20"/>
-        <path d="M38 22c6 4 14 4 20 0M22 38c4 6 4 14 0 20"/>
-        <path d="M70 18c6-4 14-4 18 2c-4 5-10 6-18-2z"/>
-        <path d="M18 70c-4 6-4 14 2 18c5-4 6-10-2-18z"/>
-      </g>
-      <g fill="url(#goldg)" stroke="#8a6212" stroke-width=".8">
-        <path d="M30 12c8-8 20-6 26 2c-8 1-16 4-26-2z"/>
-        <path d="M12 30c-8 8-6 20 2 26c1-8 4-16-2-26z"/>
-        <path d="M6 6c10 2 16 8 18 18c-10-2-16-8-18-18z"/>
-        <circle cx="92" cy="31" r="2.2"/><circle cx="31" cy="92" r="2.2"/><circle cx="6" cy="6" r="2.4"/>
-      </g>
-    </g>
-    <!-- palmette crest for the head of a page -->
-    <g id="crest">
-      <g fill="none" stroke="url(#goldv)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M110 54c-4-14-4-30 0-46c4 16 4 32 0 46z"/>
-        <path d="M110 54c-10-10-16-24-14-40c8 10 14 24 14 40z"/><path d="M110 54c10-10 16-24 14-40c-8 10-14 24-14 40z"/>
-        <path d="M110 54c-16-4-28-14-32-30c12 4 24 14 32 30z"/><path d="M110 54c16-4 28-14 32-30c-12 4-24 14-32 30z"/>
-        <path d="M108 56c-20 2-40-4-60-14c-12-6-24-4-30 6c-2 4 2 8 6 7c4-1 4-6 0-7"/>
-        <path d="M112 56c20 2 40-4 60-14c12-6 24-4 30 6c2 4-2 8-6 7c-4-1-4-6 0-7"/>
-        <path d="M60 44c6-6 16-6 22 0M138 44c6-6 16-6 22 0"/>
-      </g>
-      <g fill="url(#goldg)" stroke="#8a6212" stroke-width=".7">
-        <path d="M110 54c-4-14-4-30 0-46c4 16 4 32 0 46z"/>
-        <circle cx="110" cy="56" r="2.6"/><circle cx="24" cy="49" r="1.6"/><circle cx="196" cy="49" r="1.6"/>
-      </g>
-    </g>
+    <linearGradient id="goldm" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff4c8"/><stop offset=".18" stop-color="#e9cd75"/><stop offset=".38" stop-color="#b98a24"/><stop offset=".5" stop-color="#f6e3a0"/><stop offset=".62" stop-color="#b98a24"/><stop offset=".8" stop-color="#8a6212"/><stop offset="1" stop-color="#e2c063"/>
+    </linearGradient>
     <g id="divider" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round">
       <path d="M2 10H80M120 10H198"/>
       <path d="M82 10q9-9 18 0q9 9 18 0"/>
@@ -75,10 +39,6 @@
       <circle cx="12" cy="12" r="2.2" fill="#6b4a0c"/><circle cx="22" cy="22" r="1.6" fill="#6b4a0c"/>
       <path d="M30 14q6-3 12-4M14 30q3-6 4-12" fill="none" stroke="#6b4a0c" stroke-width=".9" stroke-linecap="round"/>
       <path d="M0 0v72M0 0h62" fill="none" stroke="#fff8dc" stroke-width="1.5" opacity=".7"/>
-    </g>
-    <g id="bookmark">
-      <path d="M2 0h20v30l-10-7-10 7z" fill="#c49a30" stroke="#6b4a0c" stroke-width="1.2" stroke-linejoin="round"/>
-      <path d="M7 7h10M7 12h10" stroke="#6b4a0c" stroke-width="1.1" stroke-linecap="round" opacity=".7"/>
     </g>
     <g id="i-cards" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">
       <rect x="9" y="3" width="11" height="16" rx="2" transform="rotate(12 14.5 11)"/>
@@ -123,22 +83,22 @@
   </section>
 
   <section id="view-notes" class="view" hidden aria-label="Notes">
-    <div class="nsearch"><input type="search" placeholder="Search your notes and drawings&hellip;" aria-label="Search notes"><span class="nstatus"></span></div>
+    <div class="nsearch"><input type="search" placeholder="Search notes" aria-label="Search notes"><span class="nstatus"></span></div>
     <div class="spread notes-spread"><div class="page left"></div><div class="page right"></div><div class="flips"></div></div>
   </section>
 
   <nav class="menu" id="menu" aria-label="Grimoire menu">
-    <button type="button" data-act="marks" title="Bookmarks"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-cards"/></svg><span class="count"></span></button>
-    <button type="button" data-act="wand" title="Change view" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-wand"/></svg></button>
-    <button type="button" data-act="orb" title="Ask the crystal (/)"><span class="mini-orb"></span></button>
-    <button type="button" data-act="notes" title="Notes"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-pen"/></svg></button>
+    <button type="button" data-act="marks" title="Bookmarks" aria-label="Bookmarks"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-cards"/></svg><span class="count"></span></button>
+    <button type="button" data-act="wand" title="Change view" aria-label="Change view" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-wand"/></svg></button>
+    <button type="button" data-act="orb" title="Ask the crystal (/)" aria-label="Ask the crystal"><span class="mini-orb"></span></button>
+    <button type="button" data-act="notes" title="Notes" aria-label="Notes"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-pen"/></svg></button>
   </nav>
 </section>
 
 <div id="measure" class="measure" aria-hidden="true"></div>
 <div class="hint ui" id="hint" role="status" aria-live="polite">Click the book</div>
-<button class="pill closer ui" id="closer" type="button">Close book</button>
-<button class="pill credits-btn ui" id="credits-btn" type="button">Credits &amp; terms</button>
+<button class="pill closer ui" id="closer" type="button" title="Close the book" aria-label="Close the book"><span class="lbl">Close book</span><span class="ico" aria-hidden="true">&times;</span></button>
+<button class="pill credits-btn ui" id="credits-btn" type="button" title="Credits and terms" aria-label="Credits and terms"><span class="lbl">Credits &amp; terms</span><span class="ico" aria-hidden="true"><i>i</i></span></button>
 <button class="pill goal-pill ui" id="goal" type="button" hidden title="Click to show every recipe again"><span>Bodybuilding plates</span> &times;</button>
 
 <div class="ball-wrap" id="ball" hidden role="dialog" aria-label="Crystal ball recipe search">

@@ -57,10 +57,11 @@ export function createLanding(app) {
     s.setProperty('--so', Math.min(vw * 0.88 / (2 * P), vh * 0.72 / H));
     footprint();
   }
+  /* the book presses the grass down only while it rests closed; once clicked it lifts free of the meadow */
   function footprint() {
     if (!app.meadow || section.hidden) return;
     const r = book.getBoundingClientRect();
-    app.meadow.setBook(r, state === 'float' ? 0 : 1);
+    app.meadow.setBook(r, state === 'closed' ? 1 : 0);
   }
   layout();
   addEventListener('resize', layout);
@@ -71,7 +72,7 @@ export function createLanding(app) {
     document.body.dataset.state = s;
     say(s === 'closed' ? 'Click the book' : s === 'open' ? 'Click the right page to begin' : '');
     book.setAttribute('aria-label', s === 'closed' ? 'The Grimoire of Delicacies. Activate to open.' : 'The Grimoire of Delicacies, open');
-    setTimeout(footprint, s === 'float' ? 50 : 1550);
+    if (s === 'closed') setTimeout(footprint, 1550);
   }
   function update() {
     leaves.forEach((lf, i) => {
@@ -89,6 +90,7 @@ export function createLanding(app) {
   function openBook() {
     if (busy || state !== 'closed') return;
     lock(2900);
+    app.meadow && app.meadow.setBook(null, 0);
     setState('float');
     setTimeout(() => { goto(1); setState('open'); }, 1100);
   }
@@ -138,6 +140,8 @@ export function createLanding(app) {
     el.addEventListener('animationend', () => el.remove());
     runes.appendChild(el);
   }, 520);
+
+  document.addEventListener('visibilitychange', () => { if (!app.meadow || section.hidden) return; document.hidden ? app.meadow.pause() : app.meadow.resume(); });
 
   return {
     get state() { return state; },

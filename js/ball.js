@@ -7,10 +7,17 @@ import * as wiki from './wikibooks.js';
 import { createCrystal, curvedText } from './crystal.js';
 import { esc } from './pages.js';
 
-const TAROT = ['beef-wellington', 'ribeye-steak', 'beef-bourguignon', 'bulgogi', 'pot-roast', 'strawberry-shortcake', 'black-forest-cake', 'matcha-mille-crepe-cake', 'new-york-cheesecake', 'chocolate-cake'];
-const SPOTS = [ /* % of the scene box, like a loose hand of cards either side of the sphere */
-  { x: 4, y: 8, r: -14 }, { x: 1, y: 44, r: -7 }, { x: 15, y: 26, r: 9 },
-  { x: 80, y: 10, r: 12 }, { x: 84, y: 46, r: 6 }, { x: 69, y: 30, r: -10 }
+const TAROT = [
+  'beef-wellington', 'ribeye-steak', 'beef-bourguignon', 'bulgogi', 'pot-roast',
+  'strawberry-shortcake', 'black-forest-cake', 'matcha-mille-crepe-cake', 'new-york-cheesecake', 'chocolate-cake',
+  'roast-chicken', 'chicken-pot-pie', 'butter-chicken', 'chicken-katsu-curry', 'chicken-noodle-soup',
+  'grilled-salmon', 'fish-and-chips', 'miso-glazed-black-cod', 'whole-steamed-fish', 'baked-cod-with-herbs',
+  'seafood-paella', 'mushroom-risotto', 'egg-fried-rice', 'bibimbap', 'jollof-rice',
+  'tomato-basil-soup', 'french-onion-soup', 'pumpkin-soup', 'mushroom-cream-soup', 'minestrone'
+];
+const SPOTS = [ /* % of the scene box: a loose hand of three either side of the sphere, stepped so every name stays readable */
+  { x: 2, y: 0, r: -12 }, { x: 16, y: 27, r: 8 }, { x: 1, y: 54, r: -6 },
+  { x: 85, y: 0, r: 12 }, { x: 71, y: 27, r: -8 }, { x: 86, y: 54, r: 6 }
 ];
 const DEFAULTS = ['chocolate cake', 'bodybuilding recipes', 'chicken', 'ramen', 'something with lemon', 'cheesecake', 'spicy'];
 const pretty = (s) => String(s).replace(/-/g, ' ');
@@ -75,6 +82,7 @@ export function createBall(app) {
     input.value = q;
     const id = ++pending;
     const local = rec.search(q);
+    app.renderGoal && app.renderGoal();
     let note = rec.goal && GOALS[rec.goal].words.test(q) ? GOALS[rec.goal].label + ' plates, about 500 kcal and 40 g protein' : (local.length ? '' : 'Searching the Wikibooks Cookbook');
     answer(local, note);
     if (navigator.onLine === false) return;
@@ -84,6 +92,7 @@ export function createBall(app) {
     live.forEach((r) => history.cacheLive(r));
     rec.addToPool(live);
     answer(rec.search(q), '');
+    app.renderGoal && app.renderGoal();
   }
   function act() {
     const m = current();
@@ -95,7 +104,7 @@ export function createBall(app) {
     const deck = TAROT.filter((id) => app.byId(id)).sort(() => Math.random() - 0.5).slice(0, 6);
     tarot.innerHTML = deck.map((id, i) => {
       const r = app.byId(id), s = SPOTS[i];
-      return '<button type="button" class="tcard" data-id="' + esc(id) + '" style="--x:' + s.x + '%;--y:' + s.y + '%;--r:' + s.r + 'deg" aria-label="' + esc(r.title) + '"><img src="assets/cards/' + esc(id) + '.webp" alt="' + esc(r.title) + '" loading="lazy"></button>';
+      return '<button type="button" class="tcard" data-id="' + esc(id) + '" style="--x:' + s.x + '%;--y:' + s.y + '%;--r:' + s.r + 'deg;--i:' + i + '" aria-label="' + esc(r.title) + '"><img src="assets/cards/' + esc(id) + '.webp" alt="' + esc(r.title) + '" loading="lazy"></button>';
     }).join('');
   }
 
@@ -117,6 +126,7 @@ export function createBall(app) {
       requestAnimationFrame(() => wrap.classList.add('on'));
       gl && gl.start();
       idle(invite);
+      if (matchMedia('(pointer: fine)').matches) setTimeout(() => input.focus({ preventScroll: true }), 650);
       app.setHash('crystal');
     },
     close() {

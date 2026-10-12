@@ -52,7 +52,8 @@ Reading history lives in `localStorage` only (`js/history.js`). The Credits pane
 
 - `data/batch-*.json` are the hand-written source files: 100 popular dishes from around the world. Ingredient lists are plain facts; methods are written in our own words with the real process, temperatures and timings. See `data/RECIPE_GUIDE.md` for the schema and the copyright rules.
 - `data/images-*.json` hold one Unsplash photo per recipe (URL, photographer, links). Seven dishes have no clear match on Unsplash and are marked `"uncertain": true`: Korean fried chicken, massaman curry, beef bourguignon, coq au vin, feijoada, bobotie, bulgogi and matcha mille crêpe cake use the closest honest photo.
-- `assets/cards/` are the tarot cards shown around the crystal; each names a dish in the book.
+- `assets/cards/` are the thirty tarot cards shown around the crystal (beef, cake, chicken, fish, rice and soup suits); each names a dish in the book. `data/batch-cards.json` holds the eleven recipes written so every card leads somewhere.
+- `assets/orn/` are the engraved acanthus ornaments (corners, head and tail pieces) lifted from the owner's filigree reference sheet, recoloured gold; every page frame is built from them.
 - Build order after editing data: `python3 tools/nutrition.py`, `python3 tools/similarity.py` (needs `pip install scikit-learn numpy`), then `node tools/build-data.mjs`, which validates every tag, merges photos, nutrition and neighbours, and writes `data/recipes.js`.
 - `node tools/check-wiki.mjs` checks each recipe's `wiki` title against the live Wikibooks API and reports missing pages and available photos. With `--bake` it writes the photo URL and credit into the batch files; rebuild afterwards. The titles were set from memory and have not yet been verified online.
 
@@ -65,6 +66,8 @@ The site needs to reach these hosts for the live features: `en.wikibooks.org`, `
 ## The meadow
 
 `js/grass.js` draws one `InstancedMesh` of a tapered blade (three.js, vendored in `js/vendor/`) duplicated 36 000 to 96 000 times depending on the device over gently rolling ground, seen from above. Wind is value noise in the vertex shader, the pointer pushes blades aside, and golden dew sparkles are one `Points` draw. When the book fills the screen the render loop stops, the canvas is hidden and its drawing buffer is shrunk to a single pixel, so the meadow costs nothing per frame and almost no GPU memory until you return to the title page or close the book. It also pauses while the tab is hidden.
+
+Page turns are real leaves: a temporary 3D element lifts off one column carrying the old page on its front, reveals the page beneath as it rises, and lands on the other column showing the new page on its back; only then does the column beneath take the content over (`js/flipbook.js`). Between recipes three leaves turn in a short cascade.
 
 The marble pages use four procedurally generated vein textures (`assets/marble-*.webp`); every page picks one at random with a random offset, so no two pages share a pattern. Phoenician letters drift up from the margins now and then (`Noto Sans Phoenician`). The crystal ball is a volumetric fragment shader (`js/crystal.js`): rays refract into a glass sphere and march through 3D noise, so the glow ribbons sit at real depths; its text is laid on a cylinder in CSS 3D. It runs only while the ball is open.
 

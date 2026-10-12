@@ -249,6 +249,116 @@
   "servings": 4,
   "coverage": 1.0
  },
+ "roast-chicken": {
+  "kcal": 1062,
+  "protein": 82,
+  "carbs": 10,
+  "fat": 74,
+  "fibre": 3,
+  "sugar": 4,
+  "servings": 4,
+  "coverage": 1.0
+ },
+ "chicken-pot-pie": {
+  "kcal": 529,
+  "protein": 48,
+  "carbs": 21,
+  "fat": 26,
+  "fibre": 3,
+  "sugar": 5,
+  "servings": 6,
+  "coverage": 1.0
+ },
+ "chicken-noodle-soup": {
+  "kcal": 832,
+  "protein": 98,
+  "carbs": 25,
+  "fat": 35,
+  "fibre": 3,
+  "sugar": 4,
+  "servings": 6,
+  "coverage": 1.0
+ },
+ "grilled-salmon": {
+  "kcal": 452,
+  "protein": 34,
+  "carbs": 2,
+  "fat": 32,
+  "fibre": 1,
+  "sugar": 0,
+  "servings": 4,
+  "coverage": 0.86
+ },
+ "miso-glazed-black-cod": {
+  "kcal": 379,
+  "protein": 35,
+  "carbs": 38,
+  "fat": 6,
+  "fibre": 2,
+  "sugar": 29,
+  "servings": 4,
+  "coverage": 1.0
+ },
+ "whole-steamed-fish": {
+  "kcal": 341,
+  "protein": 18,
+  "carbs": 15,
+  "fat": 23,
+  "fibre": 2,
+  "sugar": 4,
+  "servings": 2,
+  "coverage": 1.0
+ },
+ "baked-cod-with-herbs": {
+  "kcal": 366,
+  "protein": 35,
+  "carbs": 31,
+  "fat": 12,
+  "fibre": 5,
+  "sugar": 3,
+  "servings": 4,
+  "coverage": 1.0
+ },
+ "tomato-basil-soup": {
+  "kcal": 242,
+  "protein": 4,
+  "carbs": 17,
+  "fat": 19,
+  "fibre": 4,
+  "sugar": 9,
+  "servings": 4,
+  "coverage": 1.0
+ },
+ "pumpkin-soup": {
+  "kcal": 143,
+  "protein": 3,
+  "carbs": 17,
+  "fat": 8,
+  "fibre": 2,
+  "sugar": 7,
+  "servings": 6,
+  "coverage": 1.0
+ },
+ "mushroom-cream-soup": {
+  "kcal": 344,
+  "protein": 8,
+  "carbs": 15,
+  "fat": 28,
+  "fibre": 2,
+  "sugar": 6,
+  "servings": 4,
+  "coverage": 1.0
+ },
+ "minestrone": {
+  "kcal": 257,
+  "protein": 12,
+  "carbs": 40,
+  "fat": 6,
+  "fibre": 9,
+  "sugar": 7,
+  "servings": 6,
+  "coverage": 1.0
+ },
  "chocolate-cake": {
   "kcal": 540,
   "protein": 7,

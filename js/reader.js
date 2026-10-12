@@ -20,6 +20,7 @@ export function createReader(app) {
   let current = null, trail = [], shownAt = 0, counter = 0, busy = false, lockT = 0, active = false;
 
   const portrait = () => innerWidth / innerHeight < 0.95;
+  function layout() { const p = portrait(); document.body.classList.toggle('portrait', p); fb.single = p; return p; }
   function say(t) {
     hint.classList.add('off');
     clearTimeout(say.t);
@@ -35,8 +36,8 @@ export function createReader(app) {
 
   function entryFor(r) {
     counter++;
-    fb.single = portrait();
-    return { recipe: r, pages: paginate(r, counter, measure), n: counter };
+    const single = layout();
+    return { recipe: r, pages: paginate(r, counter, measure), n: counter, single };
   }
   function cascadeLen(e) { return 3; }
 
@@ -90,8 +91,8 @@ export function createReader(app) {
     const back = trail.pop();
     if (!back) { app.closeBook(); return; }
     lock(1500);
-    fb.single = portrait();
-    if (back.single !== fb.single) back.pages = paginate(back.recipe, back.n, measure);
+    const single = layout();
+    if (back.single !== single) { back.pages = paginate(back.recipe, back.n, measure); back.single = single; }
     land(back, { cascade: cascadeLen(back), dir: -1 }, Math.ceil(back.pages.length / (fb.single ? 1 : 2)) - 1);
   }
   function jumpTo(r) {
@@ -172,7 +173,8 @@ export function createReader(app) {
   addEventListener('keydown', (e) => {
     if (!active) return;
     if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) { if (e.key === 'Escape') e.target.blur(); return; }
-    if (app.ball.isOpen() || app.views.anyOpen()) return;
+    if (app.ball.isOpen()) { if (e.key === 'Escape') app.ball.close(); return; }
+    if (app.views.anyOpen()) { if (e.key === 'Escape') app.views.closeAll(); return; }
     const k = e.key;
     if (k === 'ArrowRight' || k === ' ' || k === 'Enter') { e.preventDefault(); next(); }
     else if (k === 'ArrowLeft') prev();
@@ -184,7 +186,7 @@ export function createReader(app) {
   addEventListener('resize', () => {
     if (!active || !current) return;
     clearTimeout(rt);
-    rt = setTimeout(() => { const s = fb.single; fb.single = portrait(); if (s !== fb.single) { current.pages = paginate(current.recipe, current.n, measure); fb.show(current.pages, 0, 'none'); } else { current.pages = paginate(current.recipe, current.n, measure); fb.show(current.pages, Math.min(fb.spread, fb.spreads - 1), 'none'); } wire(); }, 150);
+    rt = setTimeout(() => { const was = fb.single, single = layout(); current.pages = paginate(current.recipe, current.n, measure); current.single = single; fb.show(current.pages, was !== single ? 0 : Math.min(fb.spread, fb.spreads - 1), 'none'); wire(); }, 150);
   });
 
   /* ---------- runes drifting in the margins ---------- */
