@@ -1,24 +1,31 @@
-/* Per-browser memory of what the reader lingered on and searched for. Lives in localStorage only;
-   nothing leaves the device. Every access is guarded because storage can be blocked or full. */
-const KEY = 'recipe-book.v1';
-const MAX_READS = 40, MAX_SEARCHES = 20, MAX_SEEN = 300;
+/* Per-browser memory: what the reader lingered on, searched for, bookmarked and wrote.
+   Lives in localStorage only; nothing leaves the device. Every access is guarded because storage can be blocked or full. */
+const KEY = 'grimoire.v2';
+const MAX_READS = 60, MAX_SEARCHES = 30, MAX_SEEN = 300, NOTE_MAX = 520;
 
+function blank() { return { reads: [], searches: [], seen: [], live: {}, bookmarks: [], notes: {}, goal: null }; }
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) { const d = JSON.parse(raw); if (d && typeof d === 'object') return d; }
+    if (raw) { const d = JSON.parse(raw); if (d && typeof d === 'object') return { ...blank(), ...d }; }
   } catch (e) { /* ignore */ }
-  return { reads: [], searches: [], seen: [], live: {} };
+  return blank();
 }
 function save(d) { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) { /* ignore */ } }
 
+/* plain text only: no tags, braces, backticks or control characters, and a hard length cap */
+export function cleanNote(s) {
+  return String(s || '').replace(/[<>{}`\\]/g, '').replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, '').slice(0, NOTE_MAX);
+}
+
 export const history = {
   data: load(),
+  NOTE_MAX,
   noteRead(recipe, dwellMs) {
     const d = this.data;
     d.reads = d.reads.filter((r) => r.id !== recipe.id);
     d.reads.push({ id: recipe.id, title: recipe.title, dwell: Math.round(dwellMs), at: Date.now(),
-      tags: { dish: recipe.dish, flavors: recipe.flavors, mains: recipe.mains, cuisine: recipe.cuisine, category: recipe.category } });
+      tags: { dish: recipe.dish, flavors: recipe.flavors, mains: recipe.mains, cuisine: recipe.cuisine, category: recipe.category, goal: recipe.goal || [] } });
     if (d.reads.length > MAX_READS) d.reads.splice(0, d.reads.length - MAX_READS);
     save(d);
   },
@@ -44,7 +51,35 @@ export const history = {
     if (s) return { kind: 'search', ...s };
     return null;
   },
+  /* recent reads, newest first, with a recency weight 1 .. 0.2 */
+  weightedReads() {
+    const reads = this.data.reads.slice().reverse();
+    return reads.map((r, i) => ({ ...r, w: Math.max(0.2, 1 - i * 0.08) }));
+  },
   recentlySeen(n) { return this.data.seen.slice(-n); },
+
+  get goal() { return this.data.goal; },
+  setGoal(g) { this.data.goal = g || null; save(this.data); },
+
+  isBookmarked(id) { return this.data.bookmarks.includes(id); },
+  toggleBookmark(id) {
+    const d = this.data;
+    if (d.bookmarks.includes(id)) d.bookmarks = d.bookmarks.filter((x) => x !== id);
+    else d.bookmarks.push(id);
+    save(d);
+    return d.bookmarks.includes(id);
+  },
+  bookmarks() { return this.data.bookmarks.slice(); },
+
+  note(id) { return this.data.notes[id] || ''; },
+  setNote(id, text) {
+    const d = this.data;
+    const t = cleanNote(text);
+    if (t) d.notes[id] = t; else delete d.notes[id];
+    save(d);
+    return t;
+  },
+
   cacheLive(recipe) {
     const d = this.data;
     d.live = d.live || {};
@@ -54,5 +89,5 @@ export const history = {
     save(d);
   },
   liveRecipes() { return Object.values(this.data.live || {}); },
-  clear() { this.data = { reads: [], searches: [], seen: [], live: {} }; save(this.data); }
+  clear() { const keep = { bookmarks: this.data.bookmarks, notes: this.data.notes }; this.data = { ...blank(), ...keep }; save(this.data); }
 };
