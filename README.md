@@ -1,6 +1,8 @@
 # The Grimoire of Delicacies
 
-A white-marble glass grimoire lying in a wind-blown meadow seen from above. Click it and it floats, opens, and turns to a recipe chosen for you. Linger on a recipe and the book learns what you like; hurry past and it changes its mind, until a crystal ball rises and asks what you are really hungry for.
+A white-marble grimoire resting on a fur-thick meadow seen from above. Click it and it floats and opens on its chant page; turn that page and the reader takes over: a flat two-column page with page-turn transitions, a glass menu at the foot, bookmarks, notes you can write and draw on, and a crystal ball that answers in its own words.
+
+The site is two scenes. Scene one (landing) owns the Three.js meadow and the 3D book; scene two (reader) is plain DOM, so the meadow is switched off entirely while you read and nothing 3D runs behind the pages. Closing the book returns to scene one with the book closed.
 
 Everything runs in the browser as static files. No accounts, no server, no paid services.
 
@@ -42,7 +44,7 @@ Tunables live at the top of `js/recommend.js`: `DWELL_MS` (10 000), `SET_SIZE` (
 
 **Nutrition.** `python3 tools/nutrition.py` estimates calories, protein, carbohydrates, sugar, fat and fibre per serving from each ingredient line using a compact per-100 g table, and writes `data/nutrition.json`. The label page after each recipe shows the figures as estimates.
 
-**Bookmarks and notes.** The ribbon in each page's top-right corner bookmarks a recipe (or press `b`). Bookmarks stack as cards at the bottom of the screen and fan out on hover. Every recipe ends with a notes page you can type on; text is kept per recipe in this browser, limited to one page, and stripped of anything that is not plain text.
+**Bookmarks and notes.** The ribbon flush with the top of every page bookmarks a recipe (or press `b`). The glass menu's first item opens the bookmark ring: cards on a turning wheel (drag or scroll; past ten cards the wheel wraps around the whole list), or, with the wand, a table-of-contents list with page turns. Every recipe ends with a notes page: tap the lines to type, drag to draw with a finger, pen or mouse; both save as you go. The menu's pen item opens the planner, one cell per note, searchable by what you wrote and by what you drew (drawings are labelled in the browser by a Quick, Draw! doodle classifier fetched once from a CDN).
 
 Reading history lives in `localStorage` only (`js/history.js`). The Credits panel has a **Forget my history** button.
 
@@ -64,7 +66,7 @@ The site needs to reach these hosts for the live features: `en.wikibooks.org`, `
 
 `js/grass.js` draws one `InstancedMesh` of a tapered blade (three.js, vendored in `js/vendor/`) duplicated 36 000 to 96 000 times depending on the device over gently rolling ground, seen from above. Wind is value noise in the vertex shader, the pointer pushes blades aside, and golden dew sparkles are one `Points` draw. When the book fills the screen the render loop stops, the canvas is hidden and its drawing buffer is shrunk to a single pixel, so the meadow costs nothing per frame and almost no GPU memory until you return to the title page or close the book. It also pauses while the tab is hidden.
 
-The marble pages are a pre-rendered tileable vein texture (`assets/marble.webp`) over CSS gradients, with the animated sheen painted only on the two faces you are looking at. Phoenician letters drift up from the margins now and then (`Noto Sans Phoenician`). The crystal ball is a single fragment shader (`js/crystal.js`) that runs only while the ball is open.
+The marble pages use four procedurally generated vein textures (`assets/marble-*.webp`); every page picks one at random with a random offset, so no two pages share a pattern. Phoenician letters drift up from the margins now and then (`Noto Sans Phoenician`). The crystal ball is a volumetric fragment shader (`js/crystal.js`): rays refract into a glass sphere and march through 3D noise, so the glow ribbons sit at real depths; its text is laid on a cylinder in CSS 3D. It runs only while the ball is open.
 
 ## Layout
 
@@ -76,10 +78,17 @@ js/book.js           book state machine, page turning, pagination, crystal ball 
 js/recommend.js      tiered recommendation engine
 js/tagger.js         text -> taxonomy tags (for searches and live pages)
 js/wikibooks.js      Wikibooks Cookbook API client
+js/landing.js        scene one: meadow + 3D book, chant page
+js/reader.js         scene two: recipe reader, notes pad wiring, bookmarks
+js/flipbook.js       two-column page with page-turn transitions (shared by reader and views)
+js/pages.js          page markup and pagination
+js/views.js          bookmark ring / list, notes planner and search
+js/ball.js           crystal overlay: messages inside the sphere, tarot cards, asking
+js/crystal.js        volumetric glass-sphere shader + 3D curved text
+js/sketch.js         drawing on the notes pad, doodle recognition
 js/history.js        localStorage memory: reads, searches, goal, bookmarks, notes
-js/grass.js          three.js meadow
-js/crystal.js        liquid-light shader for the crystal ball
-assets/              marble texture, tarot cards
+js/grass.js          three.js meadow with book weight and ground texture
+assets/              marble textures, ground texture, tarot cards
 data/                taxonomy, recipe batches, generated recipes.js
 tools/               build and link-check scripts
 ```

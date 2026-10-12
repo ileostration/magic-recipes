@@ -12,16 +12,54 @@
 <link rel="stylesheet" href="css/book.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='10' y='8' width='44' height='48' rx='4' fill='%23fbf9f4' stroke='%23c49a30' stroke-width='3'/%3E%3Cpath d='M20 22h24M20 32h24M20 42h16' stroke='%23c49a30' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
 </head>
-<body data-state="closed">
+<body data-scene="landing" data-state="closed">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
-    <g id="corner" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round">
-      <path d="M10 10c10 0 18 6 18 14M10 10c0 10 6 18 14 18"/>
-      <path d="M14 7c4-4 10-4 14-1M7 14c-4 4-4 10-1 14"/>
-      <circle cx="15" cy="15" r="2.6"/>
-      <path d="M32 10h12M10 32v12"/>
-      <circle cx="46" cy="10" r="1.2" fill="currentColor"/>
-      <circle cx="10" cy="46" r="1.2" fill="currentColor"/>
+    <linearGradient id="goldg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f3dc8e"/><stop offset=".35" stop-color="#c49a30"/><stop offset=".55" stop-color="#f1d98a"/><stop offset=".8" stop-color="#9a6c14"/><stop offset="1" stop-color="#e2c063"/>
+    </linearGradient>
+    <linearGradient id="goldv" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e9cd75"/><stop offset=".5" stop-color="#b98a24"/><stop offset="1" stop-color="#8a6212"/>
+    </linearGradient>
+    <!-- acanthus corner: engraved scrolls and leaves hugging two edges (top-left orientation; mirrored for the others) -->
+    <g id="acanthus">
+      <g fill="none" stroke="#fff8dc" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity=".9" transform="translate(.8 .8)">
+        <path d="M4 6c30-3 56 0 84 10c14 5 22 14 18 22c-3 6-11 6-14 0c-2-5 3-9 8-7"/>
+        <path d="M6 4c-3 30 0 56 10 84c5 14 14 22 22 18c6-3 6-11 0-14c-5-2-9 3-7 8"/>
+      </g>
+      <g fill="none" stroke="url(#goldv)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 6c30-3 56 0 84 10c14 5 22 14 18 22c-3 6-11 6-14 0c-2-5 3-9 8-7"/>
+        <path d="M6 4c-3 30 0 56 10 84c5 14 14 22 22 18c6-3 6-11 0-14c-5-2-9 3-7 8"/>
+        <path d="M30 12c8-8 20-6 26 2c-8 1-16 4-26-2z"/>
+        <path d="M52 15c9-6 20-3 24 6c-9-1-17 1-24-6z"/>
+        <path d="M12 30c-8 8-6 20 2 26c1-8 4-16-2-26z"/>
+        <path d="M15 52c-6 9-3 20 6 24c-1-9 1-17-6-24z"/>
+        <path d="M6 6c6 6 12 8 20 8M6 6c6 6 8 12 8 20"/>
+        <path d="M38 22c6 4 14 4 20 0M22 38c4 6 4 14 0 20"/>
+        <path d="M70 18c6-4 14-4 18 2c-4 5-10 6-18-2z"/>
+        <path d="M18 70c-4 6-4 14 2 18c5-4 6-10-2-18z"/>
+      </g>
+      <g fill="url(#goldg)" stroke="#8a6212" stroke-width=".8">
+        <path d="M30 12c8-8 20-6 26 2c-8 1-16 4-26-2z"/>
+        <path d="M12 30c-8 8-6 20 2 26c1-8 4-16-2-26z"/>
+        <path d="M6 6c10 2 16 8 18 18c-10-2-16-8-18-18z"/>
+        <circle cx="92" cy="31" r="2.2"/><circle cx="31" cy="92" r="2.2"/><circle cx="6" cy="6" r="2.4"/>
+      </g>
+    </g>
+    <!-- palmette crest for the head of a page -->
+    <g id="crest">
+      <g fill="none" stroke="url(#goldv)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M110 54c-4-14-4-30 0-46c4 16 4 32 0 46z"/>
+        <path d="M110 54c-10-10-16-24-14-40c8 10 14 24 14 40z"/><path d="M110 54c10-10 16-24 14-40c-8 10-14 24-14 40z"/>
+        <path d="M110 54c-16-4-28-14-32-30c12 4 24 14 32 30z"/><path d="M110 54c16-4 28-14 32-30c-12 4-24 14-32 30z"/>
+        <path d="M108 56c-20 2-40-4-60-14c-12-6-24-4-30 6c-2 4 2 8 6 7c4-1 4-6 0-7"/>
+        <path d="M112 56c20 2 40-4 60-14c12-6 24-4 30 6c2 4-2 8-6 7c-4-1-4-6 0-7"/>
+        <path d="M60 44c6-6 16-6 22 0M138 44c6-6 16-6 22 0"/>
+      </g>
+      <g fill="url(#goldg)" stroke="#8a6212" stroke-width=".7">
+        <path d="M110 54c-4-14-4-30 0-46c4 16 4 32 0 46z"/>
+        <circle cx="110" cy="56" r="2.6"/><circle cx="24" cy="49" r="1.6"/><circle cx="196" cy="49" r="1.6"/>
+      </g>
     </g>
     <g id="divider" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round">
       <path d="M2 10H80M120 10H198"/>
@@ -30,118 +68,106 @@
       <circle cx="74" cy="10" r="1.3" fill="currentColor"/>
       <circle cx="126" cy="10" r="1.3" fill="currentColor"/>
     </g>
-    <!-- metal corner guard: a filigree triangle that wraps the cover corner -->
-    <linearGradient id="goldg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#f3dc8e"/><stop offset=".35" stop-color="#c49a30"/><stop offset=".55" stop-color="#f1d98a"/><stop offset=".8" stop-color="#9a6c14"/><stop offset="1" stop-color="#e2c063"/>
-    </linearGradient>
     <g id="guard">
       <path d="M0 0H62Q52 8 40 10T18 22Q12 34 10 52T0 72Z" fill="url(#goldg)" stroke="#7a5410" stroke-width="1"/>
       <path d="M8 8h34c-8 2-14 4-20 8s-9 10-11 19V8z" fill="none" stroke="#fff5cf" stroke-width="1.2" opacity=".8"/>
       <path d="M12 12c6 0 11 2 14 6M12 12c0 6 2 11 6 14" fill="none" stroke="#6b4a0c" stroke-width="1.1" stroke-linecap="round"/>
-      <circle cx="12" cy="12" r="2.2" fill="#6b4a0c"/>
-      <circle cx="22" cy="22" r="1.6" fill="#6b4a0c"/>
+      <circle cx="12" cy="12" r="2.2" fill="#6b4a0c"/><circle cx="22" cy="22" r="1.6" fill="#6b4a0c"/>
       <path d="M30 14q6-3 12-4M14 30q3-6 4-12" fill="none" stroke="#6b4a0c" stroke-width=".9" stroke-linecap="round"/>
       <path d="M0 0v72M0 0h62" fill="none" stroke="#fff8dc" stroke-width="1.5" opacity=".7"/>
     </g>
     <g id="bookmark">
-      <path d="M3 2h18v28l-9-7-9 7z" fill="currentColor" stroke="#6b4a0c" stroke-width="1.2" stroke-linejoin="round"/>
-      <path d="M8 8h8M8 13h8" stroke="#6b4a0c" stroke-width="1.1" stroke-linecap="round" opacity=".7"/>
+      <path d="M2 0h20v30l-10-7-10 7z" fill="#c49a30" stroke="#6b4a0c" stroke-width="1.2" stroke-linejoin="round"/>
+      <path d="M7 7h10M7 12h10" stroke="#6b4a0c" stroke-width="1.1" stroke-linecap="round" opacity=".7"/>
     </g>
-    <!-- ornamental filigree tile, gold on nothing; used on the cover band and the page edges -->
-    <pattern id="motif" width="60" height="60" patternUnits="userSpaceOnUse">
-      <g fill="none" stroke="#b98a24" stroke-width="1.3" stroke-linecap="round">
-        <path d="M30 4c6 0 10 4 10 9s-4 7-7 7-5-2-5-4 2-3 3-3M30 4c-6 0-10 4-10 9s4 7 7 7 5-2 5-4-2-3-3-3"/>
-        <path d="M30 56c6 0 10-4 10-9s-4-7-7-7-5 2-5 4 2 3 3 3M30 56c-6 0-10-4-10-9s4-7 7-7 5 2 5 4-2 3-3 3"/>
-        <path d="M4 30c0-6 4-10 9-10s7 4 7 7-2 5-4 5-3-2-3-3M56 30c0-6-4-10-9-10s-7 4-7 7 2 5 4 5 3-2 3-3"/>
-        <path d="M4 30c0 6 4 10 9 10s7-4 7-7-2-5-4-5-3 2-3 3M56 30c0 6-4 10-9 10s-7-4-7-7 2-5 4-5 3 2 3 3"/>
-        <path d="M30 24l4 6-4 6-4-6z"/>
-        <path d="M0 0q8 8 0 16M60 0q-8 8 0 16M0 60q8-8 0-16M60 60q-8-8 0-16"/>
-      </g>
-      <g fill="#b98a24"><circle cx="30" cy="30" r="1.6"/><circle cx="30" cy="2" r="1.1"/><circle cx="30" cy="58" r="1.1"/><circle cx="2" cy="30" r="1.1"/><circle cx="58" cy="30" r="1.1"/></g>
-    </pattern>
-    <filter id="ball-shadow" x="-20%" y="-20%" width="140%" height="160%">
-      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#06031c" flood-opacity=".85"/>
-      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#8ad8ff" flood-opacity=".45"/>
-    </filter>
+    <g id="i-cards" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">
+      <rect x="9" y="3" width="11" height="16" rx="2" transform="rotate(12 14.5 11)"/>
+      <rect x="4" y="5" width="11" height="16" rx="2" fill="rgba(255,255,255,.08)"/>
+      <path d="M7 9h5M7 12h5"/>
+    </g>
+    <g id="i-wand" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+      <path d="M4 20L15 9"/><path d="M17 3l1 3 3 1-3 1-1 3-1-3-3-1 3-1z" fill="currentColor" stroke="none"/><path d="M6 6l.5 1.5L8 8l-1.5.5L6 10l-.5-1.5L4 8l1.5-.5z" fill="currentColor" stroke="none"/>
+    </g>
+    <g id="i-pen" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 20l3-1 11-11-2-2L5 17z"/><path d="M14 8l2 2"/><path d="M4 20l1-3"/>
+    </g>
   </defs>
 </svg>
 
-
-<canvas id="grass" aria-hidden="true"></canvas>
-<div class="light" aria-hidden="true"></div>
-<div class="veil" aria-hidden="true"></div>
-
-<main class="stage" id="stage">
-  <div class="cam">
-    <div class="shadow" aria-hidden="true"></div>
-    <div class="hover">
-      <div class="book" id="book" role="button" tabindex="0" aria-label="The Grimoire of Delicacies. Activate to open."></div>
+<!-- scene one: the meadow and the closed grimoire -->
+<section id="landing">
+  <canvas id="grass" aria-hidden="true"></canvas>
+  <div class="light" aria-hidden="true"></div>
+  <main class="stage" id="stage">
+    <div class="cam">
+      <div class="shadow" aria-hidden="true"></div>
+      <div class="hover">
+        <div class="book" id="book" role="button" tabindex="0" aria-label="The Grimoire of Delicacies. Activate to open."></div>
+      </div>
     </div>
-  </div>
-</main>
-<div id="measure" class="measure" aria-hidden="true"></div>
+  </main>
+</section>
 
+<!-- scene two: the reader -->
+<section id="reader" hidden>
+  <div class="spread" id="spread-area">
+    <div class="page left"></div>
+    <div class="page right"></div>
+    <div class="flips"></div>
+  </div>
+  <div class="runes" aria-hidden="true"></div>
+
+  <section id="view-marks" class="view" hidden aria-label="Bookmarks">
+    <div class="ring-wrap"><div class="ring"></div><p class="empty-msg">No bookmarks yet. Tap the ribbon in a page’s corner.</p></div>
+    <div class="spread toc-spread"><div class="page left"></div><div class="page right"></div><div class="flips"></div></div>
+  </section>
+
+  <section id="view-notes" class="view" hidden aria-label="Notes">
+    <div class="nsearch"><input type="search" placeholder="Search your notes and drawings&hellip;" aria-label="Search notes"><span class="nstatus"></span></div>
+    <div class="spread notes-spread"><div class="page left"></div><div class="page right"></div><div class="flips"></div></div>
+  </section>
+
+  <nav class="menu" id="menu" aria-label="Grimoire menu">
+    <button type="button" data-act="marks" title="Bookmarks"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-cards"/></svg><span class="count"></span></button>
+    <button type="button" data-act="wand" title="Change view" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-wand"/></svg></button>
+    <button type="button" data-act="orb" title="Ask the crystal (/)"><span class="mini-orb"></span></button>
+    <button type="button" data-act="notes" title="Notes"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-pen"/></svg></button>
+  </nav>
+</section>
+
+<div id="measure" class="measure" aria-hidden="true"></div>
 <div class="hint ui" id="hint" role="status" aria-live="polite">Click the book</div>
 <button class="pill closer ui" id="closer" type="button">Close book</button>
 <button class="pill credits-btn ui" id="credits-btn" type="button">Credits &amp; terms</button>
 <button class="pill goal-pill ui" id="goal" type="button" hidden title="Click to show every recipe again"><span>Bodybuilding plates</span> &times;</button>
-<button class="pill photo-btn ui" id="photo" type="button">Photo</button>
-<button class="orb-btn ui" id="orb" type="button" aria-label="Ask the crystal ball for a recipe" title="Ask the crystal (/)"></button>
 
-<div class="stack ui empty" id="stack" aria-label="Bookmarked recipes">
-  <div class="cards"></div>
-  <span class="count" aria-hidden="true"></span>
-  <button class="all" type="button">all bookmarks</button>
-</div>
-
-<div class="ball-wrap" id="ball" aria-hidden="true" role="dialog" aria-label="Crystal ball recipe search">
+<div class="ball-wrap" id="ball" hidden role="dialog" aria-label="Crystal ball recipe search">
   <div class="dim"></div>
   <div class="scene">
-    <div class="tarot left" aria-label="Dishes the cards suggest"></div>
-    <div class="crystal">
+    <div class="tarot" aria-label="Dishes the cards suggest"></div>
+    <div class="crystal" role="button" tabindex="0" aria-label="The crystal. Click to take what it shows.">
       <canvas aria-hidden="true"></canvas>
-      <svg class="ball-text" viewBox="0 0 400 400" aria-hidden="true">
-        <defs>
-          <path id="arc-top" d="M60 190 A140 140 0 0 1 340 190"/>
-          <path id="arc-mid" d="M70 250 A150 150 0 0 1 330 250"/>
-        </defs>
-        <text class="ttl" filter="url(#ball-shadow)"><textPath href="#arc-top" startOffset="50%" text-anchor="middle">The Crystal</textPath></text>
-        <text class="ask" filter="url(#ball-shadow)"><textPath href="#arc-mid" startOffset="50%" text-anchor="middle"><tspan id="ask-text">Ask me anything</tspan></textPath></text>
-      </svg>
+      <div class="ctext-wrap"><div class="ctext" data-kind="ask"></div></div>
       <button class="x" type="button" aria-label="Close">&times;</button>
     </div>
-    <div class="tarot right" aria-label="Dishes the cards suggest"></div>
   </div>
-  <div class="ask-box">
-    <form autocomplete="off">
-      <input type="search" name="q" placeholder="chocolate cake, ramen, bodybuilding recipes&hellip;" aria-label="What are you craving?">
-      <button type="submit">Reveal</button>
-    </form>
-    <div class="chips"></div>
-    <div class="st"></div>
-    <div class="res"></div>
-  </div>
-</div>
-
-<div class="panel" id="marks" aria-hidden="true">
-  <div class="card" role="dialog" aria-label="All bookmarks">
-    <h2>Bookmarks</h2>
-    <div class="list"></div>
-    <div class="row"><button type="button" class="close">Close</button></div>
-  </div>
+  <form class="ask-box" autocomplete="off">
+    <input type="search" name="q" placeholder="What are you hungry for?" aria-label="What are you craving?">
+    <button type="button" class="reveal">Reveal</button>
+  </form>
 </div>
 
 <div class="panel" id="credits" aria-hidden="true">
   <div class="card" role="dialog" aria-label="Credits and terms">
     <h2>Credits &amp; terms</h2>
-    <p>The Grimoire of Delicacies is a free, non-commercial project. It runs entirely in your browser: there are no accounts, and what you read, search, bookmark or write is remembered only in this browser&rsquo;s local storage so the book can open to your tastes next time.</p>
+    <p>The Grimoire of Delicacies is a free, non-commercial project. It runs entirely in your browser: there are no accounts, and what you read, search, bookmark, write or draw is remembered only in this browser&rsquo;s local storage so the book can open to your tastes next time.</p>
     <h3>Recipes</h3>
-    <p>The grimoire&rsquo;s own recipes are written for this project. Their ingredient lists are plain lists of facts, and their methods are written in our own words while keeping the real process, temperatures and timings. They are offered as general cooking guidance without warranty; check doneness and food safety yourself. Nutrition figures are estimates computed from the ingredient lists and are not a substitute for a dietitian.</p>
-    <p>Recipes marked <em>Wikibooks</em> are fetched live from the <a href="https://en.wikibooks.org/wiki/Cookbook:Table_of_Contents" target="_blank" rel="noopener">Wikibooks Cookbook</a> and are reused under the <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">Creative Commons Attribution-ShareAlike 4.0</a> licence. Each such page links back to its source.</p>
-    <h3>Photographs</h3>
-    <p>Dish photographs come from <a href="https://unsplash.com/?utm_source=grimoire_of_delicacies&utm_medium=referral" target="_blank" rel="noopener">Unsplash</a> under the Unsplash License, with the photographer named under each picture. Live Wikibooks recipes show Wikimedia Commons photos with author and licence. The tarot cards are illustrations supplied by the project owner.</p>
+    <p>The grimoire&rsquo;s own recipes are written for this project. Their ingredient lists are plain lists of facts, and their methods are written in our own words while keeping the real process, temperatures and timings. They are offered as general cooking guidance without warranty; check doneness and food safety yourself. Nutrition figures are estimates computed from the ingredient lists.</p>
+    <p>Recipes marked <em>Wikibooks</em> are fetched live from the <a href="https://en.wikibooks.org/wiki/Cookbook:Table_of_Contents" target="_blank" rel="noopener">Wikibooks Cookbook</a> and are reused under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>. Each such page links back to its source.</p>
+    <h3>Photographs and pictures</h3>
+    <p>Dish photographs come from <a href="https://unsplash.com/?utm_source=grimoire_of_delicacies&utm_medium=referral" target="_blank" rel="noopener">Unsplash</a> under the Unsplash License, with the photographer named under each picture. The meadow ground and the tarot cards are pictures supplied by the project owner.</p>
     <h3>Software</h3>
-    <p>Meadow rendered with <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> (MIT licence). Nearest-neighbour table built with scikit-learn. Type: Caesar Dressing, Afacad Flux and Noto Sans Phoenician via Google Fonts.</p>
+    <p>Meadow rendered with <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> (MIT licence). Nearest-neighbour table built with scikit-learn. Drawing search uses a Quick, Draw! doodle classifier run in the browser with transformers.js, fetched from a public CDN on first use. Type: Caesar Dressing, Afacad Flux and Noto Sans Phoenician via Google Fonts.</p>
     <h3>Takedown</h3>
     <p>If you believe something here infringes your rights, open an issue on the project repository and it will be removed promptly.</p>
     <div class="row"><button type="button" id="forget">Forget my history</button><button type="button" id="credits-close">Close</button></div>

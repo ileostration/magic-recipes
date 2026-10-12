@@ -71,14 +71,23 @@ export const history = {
   },
   bookmarks() { return this.data.bookmarks.slice(); },
 
-  note(id) { return this.data.notes[id] || ''; },
-  setNote(id, text) {
-    const d = this.data;
-    const t = cleanNote(text);
-    if (t) d.notes[id] = t; else delete d.notes[id];
-    save(d);
-    return t;
+  /* a note is { text, drawing (png data url or ''), labels [{label, score}], at } */
+  note(id) {
+    const n = this.data.notes[id];
+    if (!n) return { text: '', drawing: '', labels: [], at: 0 };
+    if (typeof n === 'string') return { text: n, drawing: '', labels: [], at: 0 };
+    return { text: n.text || '', drawing: n.drawing || '', labels: n.labels || [], at: n.at || 0 };
   },
+  setNote(id, patch) {
+    const d = this.data;
+    const cur = this.note(id);
+    const next = { ...cur, ...patch, at: Date.now() };
+    if ('text' in patch) next.text = cleanNote(patch.text);
+    if (!next.text && !next.drawing) delete d.notes[id]; else d.notes[id] = next;
+    save(d);
+    return next;
+  },
+  allNotes() { return Object.keys(this.data.notes).map((id) => ({ id, ...this.note(id) })).sort((a, b) => b.at - a.at); },
 
   cacheLive(recipe) {
     const d = this.data;
