@@ -7,7 +7,7 @@ import { frame, esc } from './pages.js';
 import { recognize, sketchModel } from './sketch.js';
 import { findImage } from './images.js';
 
-const SLOTS = 10, STEP = 360 / SLOTS;
+const SLOTS = 10;
 
 export function createViews(app) {
   const marks = document.getElementById('view-marks');
@@ -19,14 +19,18 @@ export function createViews(app) {
   const planner = new Flipbook(notesArea);
   const search = notes.querySelector('input');
   const nstatus = notes.querySelector('.nstatus');
-  let marksMode = 'cards', rot = 0, front = null, openView = null;
+  let marksMode = 'cards', rot = 0, openView = null;
 
-  /* ---------- bookmark ring ---------- */
-  function cardHtml(r, k) {
+  /* ---------- bookmark ring ----------
+     Up to ten slots around one axis. With ten cards or fewer every card has a slot and the wheel simply goes round.
+     With more, the slots hold a sliding window of ten: turning forward past the tenth card brings the eleventh into
+     the slot the first had, and so on round the whole list; turning back does the same the other way. */
+  function cardHtml(r, k, step) {
     const im = r.image || history.image(r.id);
     const th = im && (im.thumb || im.url);
-    return '<button type="button" class="rcard" data-id="' + esc(r.id) + '" style="--a:' + (k * STEP) + 'deg">' +
-      (th ? '<img src="' + esc(th) + '" alt="" loading="lazy">' : '<img alt="" class="seek">') + '<span>' + esc(r.title) + '</span></button>';
+    return '<div class="rcard" role="button" tabindex="0" data-id="' + esc(r.id) + '" style="--a:' + (k * step) + 'deg">' +
+      (th ? '<img src="' + esc(th) + '" alt="" loading="lazy">' : '<img alt="" class="seek">') + '<span>' + esc(r.title) + '</span>' +
+      '<button type="button" class="rx" aria-label="Remove bookmark: ' + esc(r.title) + '" title="Remove bookmark">&times;</button></div>';
   }
   /* cards whose picture is missing or broken ask the image finder */
   function seekThumbs() {
@@ -35,49 +39,80 @@ export function createViews(app) {
       if (im.classList.contains('seek')) fill(); else im.onerror = fill;
     });
   }
-  function buildRing() {
+  let lastKey = '';
+  const mod = (a, n) => ((a % n) + n) % n;
+  function buildRing(force) {
     const ids = history.bookmarks().slice().reverse();
     const N = ids.length;
     ringWrap.classList.toggle('empty', !N);
-    if (!N) { ring.innerHTML = ''; front = null; return; }
-    if (N <= SLOTS) {
-      /* a hand of cards fanned in front of the reader */
-      if (front === -1 && ring.childElementCount === N) return;
-      front = -1;
-      let html = '';
-      for (let k = 0; k < N; k++) { const r = app.byId(ids[k]); if (r) html += cardHtml(r, k - (N - 1) / 2); }
-      ring.innerHTML = html;
-      seekThumbs();
-      return;
+    if (!N) { ring.innerHTML = ''; lastKey = ''; return; }
+    const slots = Math.min(N, SLOTS), step = 360 / slots;
+    const y = Math.round(-rot / step);                        /* the card facing the reader, counted along the turning */
+    let map;
+    if (N <= SLOTS) map = ids.map((id, k) => [k, id]);
+    else {
+      const w = dir >= 0 ? y - (SLOTS - 1) : y;                /* the window of ten that holds the front card */
+      map = [];
+      for (let k = 0; k < SLOTS; k++) { const j = w + mod(k - w, SLOTS); map.push([k, ids[mod(j, N)]]); }
     }
-    /* a full wheel of ten slots; past the tenth card the next bookmark takes the first slot and so on around the whole list */
-    const f = Math.round(-rot / STEP);
-    if (front === f && ring.childElementCount) return;
-    front = f;
-    let html = '';
-    for (let k = f - 4; k <= f + 5; k++) { const r = app.byId(ids[((k % N) + N) % N]); if (r) html += cardHtml(r, k); }
-    ring.innerHTML = html;
+    const key = map.map((m) => m[1]).join('|');
+    if (!force && key === lastKey && ring.childElementCount) return;
+    lastKey = key;
+    ring.innerHTML = map.map(([k, id]) => { const r = app.byId(id); return r ? cardHtml(r, k, step) : ''; }).join('');
     seekThumbs();
   }
+  let dir = 1;
   function setRot(v) {
-    const N = history.bookmarks().length;
-    if (N && N <= SLOTS) { const lim = STEP * 0.5; v = Math.max(-lim, Math.min(lim, v)); } /* a hand of cards only nudges; the full wheel turns freely */
+    if (v !== rot) dir = v < rot ? 1 : -1;                     /* turning the wheel "forward" brings the next card round */
     rot = v; ring.style.setProperty('--rot', rot + 'deg'); buildRing();
   }
   /* turning the wheel works anywhere on the page: drag, swipe or scroll */
   let dragX = null, dragRot = 0, moved = false, lastJump = 0;
   const cardsMode = () => marksMode === 'cards' && !marks.hidden;
-  marks.addEventListener('pointerdown', (e) => { if (!cardsMode() || e.target.closest('.menu')) return; dragX = e.clientX; dragRot = rot; moved = false; });
+  marks.addEventListener('pointerdown', (e) => { if (!cardsMode() || e.target.closest('.menu, .rx')) return; dragX = e.clientX; dragRot = rot; moved = false; });
   marks.addEventListener('pointermove', (e) => { if (dragX == null) return; const dx = e.clientX - dragX; if (Math.abs(dx) > 4) moved = true; setRot(dragRot + dx * 0.35); });
   const endDrag = () => { dragX = null; };
   marks.addEventListener('pointerup', endDrag); marks.addEventListener('pointercancel', endDrag); marks.addEventListener('pointerleave', endDrag);
   marks.addEventListener('wheel', (e) => { if (!cardsMode()) return; e.preventDefault(); const d = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX; setRot(rot - d * 0.25); }, { passive: false });
   marks.addEventListener('click', (e) => {
+    const x = e.target.closest('.rx');
+    if (x) { e.stopPropagation(); askRemove(x.closest('.rcard').dataset.id); return; }
     const c = e.target.closest('.rcard');
     if (!c || moved || performance.now() - lastJump < 500) { moved = false; return; }
     lastJump = performance.now();
-    const r = app.byId(c.dataset.id); if (r) app.reader.jumpTo(r);
+    const r = app.byId(c.dataset.id); if (r) app.reader.jumpTo(r, false, true);
   });
+  marks.addEventListener('keydown', (e) => { const c = e.target.closest('.rcard'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); const r = app.byId(c.dataset.id); if (r) app.reader.jumpTo(r, false, true); } });
+
+  /* ---------- removing a bookmark from its card ---------- */
+  const confirmBox = document.getElementById('confirm');
+  const SKIP_KEY = 'grimoire.skipRemoveAsk';
+  let pendingRemove = null;
+  const skipAsk = () => { try { return sessionStorage.getItem(SKIP_KEY) === '1'; } catch (e) { return false; } };
+  function askRemove(id) {
+    const r = app.byId(id);
+    if (!r) return;
+    if (skipAsk()) { removeBookmark(id); return; }
+    pendingRemove = id;
+    confirmBox.querySelector('.which').textContent = r.title;
+    confirmBox.querySelector('#confirm-skip').checked = false;
+    confirmBox.classList.add('on'); confirmBox.setAttribute('aria-hidden', 'false');
+    confirmBox.querySelector('#confirm-no').focus();
+  }
+  function closeConfirm() { confirmBox.classList.remove('on'); confirmBox.setAttribute('aria-hidden', 'true'); pendingRemove = null; }
+  function removeBookmark(id) {
+    app.reader.setBookmark(id, false);
+    buildRing(true);
+    toc.show(tocPages(), Math.min(toc.spread, Math.max(0, Math.ceil(tocPages().length / (toc.single ? 1 : 2)) - 1)), 'none');
+    app.menu.refresh();
+  }
+  confirmBox.querySelector('#confirm-yes').addEventListener('click', () => {
+    if (confirmBox.querySelector('#confirm-skip').checked) { try { sessionStorage.setItem(SKIP_KEY, '1'); } catch (e) { /* ignore */ } }
+    const id = pendingRemove; closeConfirm(); if (id) removeBookmark(id);
+  });
+  confirmBox.querySelector('#confirm-no').addEventListener('click', closeConfirm);
+  confirmBox.addEventListener('click', (e) => { if (e.target === confirmBox) closeConfirm(); });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && confirmBox.classList.contains('on')) closeConfirm(); });
 
   /* ---------- table of contents ---------- */
   function tocPages() {
@@ -95,7 +130,7 @@ export function createViews(app) {
   }
   tocArea.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-id]');
-    if (b) { const r = app.byId(b.dataset.id); if (r) app.reader.jumpTo(r); return; }
+    if (b) { const r = app.byId(b.dataset.id); if (r) app.reader.jumpTo(r, false, true); return; }
     const x = e.clientX / innerWidth;
     flipBook(toc, x < 0.5 ? -1 : 1);
   });
@@ -166,7 +201,7 @@ export function createViews(app) {
     openView = 'marks';
     marks.hidden = false;
     document.body.classList.add('view-open');
-    rot = 0; front = null; ring.style.setProperty('--rot', '0deg'); buildRing();
+    rot = 0; dir = 1; lastKey = ''; ring.style.setProperty('--rot', '0deg'); buildRing(true);
     toc.single = innerWidth / innerHeight < 0.95;
     toc.show(tocPages(), 0, 'none');
     setMarksMode(marksMode);
@@ -201,7 +236,7 @@ export function createViews(app) {
     toggleMarksMode() { setMarksMode(marksMode === 'cards' ? 'list' : 'cards'); },
     /* the menu arrows: one card round the wheel, or one page of the list or the planner */
     flip(dir) {
-      if (openView === 'marks') { if (marksMode === 'cards') setRot(rot - dir * STEP); else flipBook(toc, dir); }
+      if (openView === 'marks') { if (marksMode === 'cards') setRot(rot - dir * (360 / Math.min(Math.max(1, history.bookmarks().length), SLOTS))); else flipBook(toc, dir); }
       else if (openView === 'notes') flipBook(planner, dir);
     }
   };

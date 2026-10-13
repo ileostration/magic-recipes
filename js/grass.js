@@ -1,9 +1,9 @@
-/* Meadow, scene one only. One InstancedMesh of a grass tuft (the owner's grass picture, keyed out, assets/tuft.webp)
-   drawn many thousand times as camera-facing cards, each swaying at the top in the vertex shader, so the field
-   reads as a lush, clumped lawn rather than separate stalks. The ground under the tufts is the meadow photo, tiled.
-   The book presses the tufts flat under its footprint and splays the ones around its edges outward.
+/* Meadow, scene one only. One InstancedMesh of a thin tapered blade duplicated a hundred thousand times or more,
+   combed by wind in the vertex shader so the field reads as a thick fur coat rather than separate stalks.
+   The ground is green underfoot and fades to near white in the distance, and the whole field carries a soft glow.
+   The book presses the blades flat under its footprint and bends the ones around its edges outward.
    pause() stops the loop, hides the canvas and shrinks the drawing buffer; the reader scene never pays for it.
-   ready resolves once the pictures are in and the first frames have drawn, so the loading screen can lift. */
+   ready resolves once the ground picture is in and the first frames have drawn, so the loading screen can lift. */
 import * as THREE from './vendor/three.module.min.js';
 
 const NOISE = `
@@ -23,63 +23,61 @@ vec2 wind(vec2 xz, float phase, float time, float calm) {
   return dir * w;
 }`;
 
-const TUFT_VS = `
-attribute vec4 aInst; /* phase, tint, mirror, lean */
-attribute vec2 aWin;  /* which slice of the tuft picture this card shows: start, width */
+const BLADE_VS = `
+attribute vec4 aInst; /* phase, tint, lean, width */
 uniform float uTime, uCalm;
-uniform vec3 uRight;
 uniform vec3 uPointer; uniform float uPointerOn;
 uniform vec3 uBook; uniform vec2 uBookR; uniform float uBookOn;
-varying vec2 vUv; varying float vTint, vDepth, vShade;
+varying float vT, vTint, vShade, vDepth, vHeight;
 ${NOISE}
 void main() {
-  float ux = aInst.z > 0.0 ? uv.x : 1.0 - uv.x;
-  vUv = vec2(aWin.x + ux * aWin.y, uv.y);
+  float t = position.y;
+  vec3 p = position;
+  p.x *= aInst.w;
+  vec4 wp = instanceMatrix * vec4(p, 1.0);
   vec3 base = (instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-  float w = length(instanceMatrix[0].xyz), h = length(instanceMatrix[1].xyz);
-  float t = position.y;                                   /* 0 at the root, 1 at the top of the card */
-  /* a card that always faces the camera, standing on its root */
-  vec3 wp = base + uRight * (position.x * w) + vec3(0.0, t * h, 0.0);
+  float h = length(vec3(instanceMatrix[1].xyz));
   float bend = t * t;
-  vec2 wind2 = wind(base.xz, aInst.x, uTime, uCalm);
-  vec2 off = (wind2 * 0.55 + vec2(0.12, 0.05)) * h * bend + vec2(aInst.w, aInst.w * 0.3) * h * bend;
+  vec2 w = wind(base.xz, aInst.x, uTime, uCalm);
+  /* fur: every blade already lies well over, the wind only combs it further */
+  vec2 off = (w * 0.7 + vec2(0.35, 0.12)) * h * bend + vec2(aInst.z, aInst.z * 0.4) * h * bend;
   vec2 d = base.xz - uPointer.xz;
-  float push = exp(-dot(d, d) / 1.4) * uPointerOn;
-  off += normalize(d + vec2(0.001, 0.0)) * push * h * 0.9 * bend;
+  float push = exp(-dot(d, d) / 1.2) * uPointerOn;
+  off += normalize(d + vec2(0.001, 0.0)) * push * h * 1.1 * bend;
   /* the book's weight: flat under it, splayed outward around the edge */
   vec2 bd = (base.xz - uBook.xz) / uBookR;
-  float inside = 1.0 - smoothstep(0.8, 1.12, length(bd));
-  float rim = exp(-pow((length(bd) - 1.04) * 2.8, 2.0));
-  off += normalize(bd + vec2(0.001, 0.0)) * (rim * 0.7 + inside * 0.5) * h * bend * uBookOn;
-  float flatten = 1.0 - inside * 0.62 * uBookOn;
+  float inside = 1.0 - smoothstep(0.85, 1.15, length(bd));
+  float rim = exp(-pow((length(bd) - 1.05) * 2.6, 2.0));
+  off += normalize(bd + vec2(0.001, 0.0)) * (rim * 1.2 + inside * 0.8) * h * bend * uBookOn;
+  float flatten = 1.0 - inside * 0.82 * uBookOn;
   wp.y = base.y + (wp.y - base.y) * flatten;
   wp.xz += off;
-  wp.y -= length(off) * 0.35;
-  vec4 mv = viewMatrix * vec4(wp, 1.0);
+  wp.y -= length(off) * 0.42;
+  vec4 mv = viewMatrix * wp;
   gl_Position = projectionMatrix * mv;
-  float clump = vnoise(base.xz * 0.5) * 0.6 + vnoise(base.xz * 2.0) * 0.4;   /* neighbours share a tint */
-  vTint = mix(aInst.y, clump, 0.6);
-  vShade = 0.5 + 0.5 * dot(normalize(off + vec2(0.001)), vec2(0.7, 0.3));
-  vDepth = -mv.z;
+  float clump = vnoise(base.xz * 0.55) * 0.6 + vnoise(base.xz * 2.2) * 0.4;   /* tufts: neighbours share a tint */
+  vT = t; vTint = mix(aInst.y, clump, 0.65); vShade = 0.5 + 0.5 * dot(normalize(off + vec2(0.001)), vec2(0.7, 0.3)); vDepth = -mv.z; vHeight = base.y;
 }`;
 
-const TUFT_FS = `
+const BLADE_FS = `
 precision mediump float;
-uniform sampler2D uTex;
 uniform vec3 uFog; uniform float uFogNear, uFogFar;
-varying vec2 vUv; varying float vTint, vDepth, vShade;
+varying float vT, vTint, vShade, vDepth, vHeight;
 void main() {
-  vec4 tx = texture2D(uTex, vUv);
-  if (tx.a < 0.42) discard;
-  vec3 col = tx.rgb;
-  /* each clump a little warmer or cooler than the next, roots in shade, tips catching the light */
-  col = mix(col, col * vec3(1.08, 1.0, 0.72), (vTint - 0.5) * 0.5);
-  col = mix(col, vec3(dot(col, vec3(0.3, 0.59, 0.11))), 0.12);   /* a touch softer than the raw picture */
-  col *= 0.8 + 0.3 * vTint;
-  col *= 0.7 + 0.32 * smoothstep(0.0, 0.5, vUv.y);
-  col += vec3(0.10, 0.09, 0.01) * vShade * smoothstep(0.4, 1.0, vUv.y);
+  vec3 cBase = vec3(0.07, 0.22, 0.05);
+  vec3 cMid  = vec3(0.30, 0.64, 0.14);
+  vec3 cTip  = vec3(0.86, 0.97, 0.50);
+  vec3 col = mix(cBase, cMid, smoothstep(0.0, 0.45, vT));
+  col = mix(col, cTip, smoothstep(0.35, 1.0, vT) * (0.3 + 0.7 * vTint));
+  col *= 0.66 + 0.56 * vTint;
+  /* soft sheen along the combed direction, like light on fur */
+  col += vec3(0.16, 0.14, 0.02) * vShade * smoothstep(0.3, 1.0, vT);
+  col *= 0.85 + 0.35 * clamp(vHeight * 0.6 + 0.5, 0.0, 1.0);
+  /* a little glow: the tips lift towards a pale luminous green */
+  col += vec3(0.10, 0.16, 0.04) * smoothstep(0.5, 1.0, vT);
+  /* green underfoot to near white far away */
   float f = smoothstep(uFogNear, uFogFar, vDepth);
-  col = mix(col, uFog, f * 0.85);
+  col = mix(col, uFog, f * f * 0.97);
   gl_FragColor = vec4(col, 1.0);
 }`;
 
@@ -109,10 +107,19 @@ void main() {
   gl_FragColor = vec4(vec3(1.0, 0.9, 0.5) * a, a);
 }`;
 
-function cardGeometry(rows) {
-  /* a unit card: x from -0.5 to 0.5, y from 0 (root) to 1 (top), cut into rows so the top can sway on its own */
-  const g = new THREE.PlaneGeometry(1, 1, 1, rows);
-  g.translate(0, 0.5, 0);
+function bladeGeometry(segments) {
+  const pos = [], idx = [];
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    const half = 0.5 * (1 - t * 0.7);
+    if (i === segments) pos.push(0, 1, 0); else pos.push(-half, t, 0, half, t, 0);
+  }
+  for (let i = 0; i < segments - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  const last = (segments - 1) * 2, tip = segments * 2;
+  idx.push(last, last + 1, tip);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
   return g;
 }
 
@@ -129,80 +136,71 @@ export function createMeadow(canvas) {
   const calm = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0.35 : 1;
   const cores = navigator.hardwareConcurrency || 4;
   const mobile = /Mobi|Android/i.test(navigator.userAgent) || Math.min(innerWidth, innerHeight) < 560;
-  const COUNT = mobile || cores <= 4 ? 9000 : cores <= 8 ? 16000 : 22000;
+  const COUNT = mobile || cores <= 4 ? 50000 : cores <= 8 ? 90000 : 130000;
   const DPR_CAP = mobile ? 1.25 : 1.5;
 
-  const fog = new THREE.Color(0.86, 0.84, 0.52);
+  const fog = new THREE.Color(0.95, 0.98, 0.93);   /* near white at the horizon */
   const scene = new THREE.Scene();
   scene.background = fog;
   const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 120);
   camera.position.set(0, 6.2, 6.5);
   camera.lookAt(0, 0.2, -3.2);
 
-  let loaded = 0, framesDrawn = 0, readyResolve;
-  const ready = new Promise((res) => { readyResolve = res; });
   /* ground: the meadow photo, tiled over rolling hills */
   const ggeo = new THREE.PlaneGeometry(120, 120, 120, 120);
   ggeo.rotateX(-Math.PI / 2);
   const gp = ggeo.attributes.position;
   for (let i = 0; i < gp.count; i++) gp.setY(i, hill(gp.getX(i), gp.getZ(i)) - 0.04);
+  let loaded = 0, framesDrawn = 0, readyResolve;
+  const ready = new Promise((res) => { readyResolve = res; });
   const gtex = new THREE.TextureLoader().load('assets/ground.webp', () => { loaded++; }, undefined, () => { loaded++; });
   gtex.wrapS = gtex.wrapT = THREE.RepeatWrapping;
   gtex.colorSpace = THREE.SRGBColorSpace;
   const gmat = new THREE.ShaderMaterial({
-    uniforms: { uTex: { value: gtex }, uFog: { value: fog }, uFogNear: { value: 12 }, uFogFar: { value: 36 }, uBook: { value: new THREE.Vector3(0, 0, 999) }, uBookR: { value: new THREE.Vector2(1, 1) }, uBookOn: { value: 0 } },
+    uniforms: { uTex: { value: gtex }, uFog: { value: fog }, uFogNear: { value: 4 }, uFogFar: { value: 30 }, uBook: { value: new THREE.Vector3(0, 0, 999) }, uBookR: { value: new THREE.Vector2(1, 1) }, uBookOn: { value: 0 } },
     vertexShader: 'varying float vD; varying vec2 vUv; varying vec3 vW; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); vD = -mv.z; vUv = uv; vW = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * mv; }',
-    fragmentShader: 'precision mediump float; uniform sampler2D uTex; uniform vec3 uFog; uniform float uFogNear, uFogFar; uniform vec3 uBook; uniform vec2 uBookR; uniform float uBookOn; varying float vD; varying vec2 vUv; varying vec3 vW; void main(){ vec3 g = texture2D(uTex, vUv * 9.0).rgb * vec3(0.72, 0.8, 0.6); vec2 bd = (vW.xz - uBook.xz) / uBookR; float sh = (1.0 - smoothstep(0.7, 1.5, length(bd))) * uBookOn; g *= 1.0 - 0.55 * sh; gl_FragColor = vec4(mix(g, uFog, smoothstep(uFogNear, uFogFar, vD) * 0.85), 1.0); }'
+    fragmentShader: 'precision mediump float; uniform sampler2D uTex; uniform vec3 uFog; uniform float uFogNear, uFogFar; uniform vec3 uBook; uniform vec2 uBookR; uniform float uBookOn; varying float vD; varying vec2 vUv; varying vec3 vW; void main(){ float grain = dot(texture2D(uTex, vUv * 9.0).rgb, vec3(0.33)); vec3 g = vec3(0.16, 0.46, 0.10) * (0.75 + 0.5 * grain); vec2 bd = (vW.xz - uBook.xz) / uBookR; float sh = (1.0 - smoothstep(0.7, 1.5, length(bd))) * uBookOn; g *= 1.0 - 0.55 * sh; float f = smoothstep(uFogNear, uFogFar, vD); gl_FragColor = vec4(mix(g, uFog, f * f * 0.97), 1.0); }'
   });
   const ground = new THREE.Mesh(ggeo, gmat);
   ground.position.z = -12;
   scene.add(ground);
 
-  /* tufts: the keyed grass picture on camera-facing cards */
-  const onLoad = () => { loaded++; };
-  const ttex = new THREE.TextureLoader().load('assets/tuft.webp', onLoad, undefined, onLoad);
-  ttex.colorSpace = THREE.SRGBColorSpace;
-  ttex.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
-  const geo = cardGeometry(4);
-  const inst = new Float32Array(COUNT * 4), win = new Float32Array(COUNT * 2);
+  /* blades */
+  const geo = bladeGeometry(3);
+  const inst = new Float32Array(COUNT * 4);
   const mat = new THREE.ShaderMaterial({
-    vertexShader: TUFT_VS, fragmentShader: TUFT_FS, side: THREE.DoubleSide,
+    vertexShader: BLADE_VS, fragmentShader: BLADE_FS, side: THREE.DoubleSide,
     uniforms: {
-      uTime: { value: 0 }, uCalm: { value: calm }, uTex: { value: ttex }, uRight: { value: new THREE.Vector3(1, 0, 0) },
+      uTime: { value: 0 }, uCalm: { value: calm },
       uPointer: { value: new THREE.Vector3(0, 0, 999) }, uPointerOn: { value: 0 },
       uBook: gmat.uniforms.uBook, uBookR: gmat.uniforms.uBookR, uBookOn: gmat.uniforms.uBookOn,
-      uFog: { value: fog }, uFogNear: { value: 12 }, uFogFar: { value: 36 }
+      uFog: { value: fog }, uFogNear: { value: 5 }, uFogFar: { value: 32 }
     }
   });
   const mesh = new THREE.InstancedMesh(geo, mat, COUNT);
   mesh.frustumCulled = false;
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3();
   const up = new THREE.Vector3(0, 1, 0);
-  const NEAR_Z = 9, FAR_Z = -30, NEAR_W = 9, FAR_W = 30;
-  const ASPECT = 260 / 589;                                 /* the tuft picture is wider than tall */
+  const NEAR_Z = 8.5, FAR_Z = -30, NEAR_W = 8, FAR_W = 30;
   for (let i = 0; i < COUNT; i++) {
     const u = Math.random();
-    const z = NEAR_Z + (FAR_Z - NEAR_Z) * Math.pow(u, 0.8);
+    const z = NEAR_Z + (FAR_Z - NEAR_Z) * Math.pow(u, 0.85);
     const k = (z - NEAR_Z) / (FAR_Z - NEAR_Z);
     const w = NEAR_W + (FAR_W - NEAR_W) * k;
     const x = (Math.random() * 2 - 1) * w;
-    const width = 0.9 + Math.random() * 1.1;
-    const slice = 0.45 + Math.random() * 0.55;              /* a card shows a random stretch of the clump, so no two look alike */
-    win[i * 2] = Math.random() * (1 - slice); win[i * 2 + 1] = slice;
-    p.set(x, hill(x, z + 12) - 0.06, z);
-    q.identity();
-    s.set(width, width * ASPECT / slice * (0.65 + Math.random() * 0.75), 1);
+    const h = 0.6 + Math.random() * 0.45;
+    p.set(x, hill(x, z + 12) - 0.03, z);
+    q.setFromAxisAngle(up, Math.random() * Math.PI);
+    s.set(0.034 + Math.random() * 0.022, h, 1);
     m.compose(p, q, s);
     mesh.setMatrixAt(i, m);
     inst[i * 4] = Math.random() * 6.283;
     inst[i * 4 + 1] = Math.random();
-    inst[i * 4 + 2] = Math.random() < 0.5 ? -1 : 1;
-    inst[i * 4 + 3] = (Math.random() - 0.5) * 0.5;
+    inst[i * 4 + 2] = (Math.random() - 0.5) * 0.25;
+    inst[i * 4 + 3] = 0.8 + Math.random() * 0.6;
   }
   geo.setAttribute('aInst', new THREE.InstancedBufferAttribute(inst, 4));
-  geo.setAttribute('aWin', new THREE.InstancedBufferAttribute(win, 2));
   mesh.instanceMatrix.needsUpdate = true;
-  /* far cards first in the buffer so nearer ones overdraw them less often */
   scene.add(mesh);
 
   /* golden dew sparkles */
@@ -263,9 +261,8 @@ export function createMeadow(canvas) {
     pointerOn += (wantOn - pointerOn) * 0.08;
     mat.uniforms.uPointerOn.value = pointerOn;
     mat.uniforms.uPointer.value.lerp(target, 0.12);
-    mat.uniforms.uRight.value.set(camera.matrixWorld.elements[0], 0, camera.matrixWorld.elements[2]).normalize();
     renderer.render(scene, camera);
-    if (loaded >= 2 && ++framesDrawn >= 2 && readyResolve) { readyResolve(); readyResolve = null; }
+    if (loaded >= 1 && ++framesDrawn >= 3 && readyResolve) { readyResolve(); readyResolve = null; }
     raf = requestAnimationFrame(frame);
   }
   const api = {

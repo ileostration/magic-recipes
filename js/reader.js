@@ -38,10 +38,10 @@ export function createReader(app) {
   }
   function lock(ms) { busy = true; clearTimeout(lockT); lockT = setTimeout(() => { busy = false; }, ms); }
 
-  function entryFor(r) {
+  function entryFor(r, neutral) {
     counter++;
     const single = layout();
-    return { recipe: r, pages: paginate(r, counter, measure, single), n: counter, single };
+    return { recipe: r, pages: paginate(r, counter, measure, single), n: counter, single, neutral: !!neutral };
   }
   function cascadeLen(e) { return 3; }
 
@@ -76,8 +76,9 @@ export function createReader(app) {
     if (!active || busy || fb.busy || !current) return;
     if (fb.spread < fb.spreads - 1) { lock(900); await fb.show(current.pages, fb.spread + 1, 'next'); wire(); say(describe()); return; }
     const dwell = performance.now() - shownAt;
-    if (pos < trail.length - 1) { if (dwell >= DWELL_MS) rec.noteFlip(current.recipe, dwell); goTo(pos + 1, 1); return; } /* forward along the trail: the same recipe as before */
-    rec.noteFlip(current.recipe, dwell);
+    /* a recipe opened from the bookmarks or the planner is a visit, not a craving: it never re-seeds the book nor counts as a flip */
+    if (pos < trail.length - 1) { if (dwell >= DWELL_MS && !current.neutral) rec.noteFlip(current.recipe, dwell); goTo(pos + 1, 1); return; } /* forward along the trail: the same recipe as before */
+    if (!current.neutral) rec.noteFlip(current.recipe, dwell);
     if (rec.wantsBall()) { app.ball.open('The pages blur past. What are you really hungry for?'); rec.quick = 0; return; }
     const got = rec.next();
     if (!got) { app.ball.open('That is all the grimoire knows about ' + (rec.seed ? rec.seed.title : 'that') + '. Ask it for something else.'); rec.quick = 0; return; }
@@ -85,8 +86,8 @@ export function createReader(app) {
   }
   /* a new recipe after the current one. reset: the crystal ball starts the trail over; otherwise it is slotted in
      and whatever lay ahead stays ahead */
-  function goForward(r, reset) {
-    const e = entryFor(r);
+  function goForward(r, reset, neutral) {
+    const e = entryFor(r, neutral);
     if (reset) { trail = [e]; pos = 0; }
     else { trail.splice(pos + 1, 0, e); pos++; if (trail.length > 60) { trail.shift(); pos--; } }
     lock(1500);
@@ -107,22 +108,23 @@ export function createReader(app) {
     if (pos <= 0) { app.closeBook(); return; }
     goTo(pos - 1, -1);
   }
-  /* reset is true when the crystal ball chose: the trail starts again from this recipe */
-  function jumpTo(r, reset) {
+  /* reset is true when the crystal ball chose: the trail starts again from this recipe.
+     neutral is true for a bookmark or planner visit: it is slotted into the trail but leaves the book's taste alone */
+  function jumpTo(r, reset, neutral) {
     app.ball.close();
     app.views.closeAll();
     if (!active) { app.openReader(r); return; }
-    if (busy || fb.busy) { setTimeout(() => jumpTo(r, reset), 300); return; }
+    if (busy || fb.busy) { setTimeout(() => jumpTo(r, reset, neutral), 300); return; }
     if (current && current.recipe.id === r.id) { if (reset) { trail = [current]; pos = 0; } return; }
     rec.shown.add(r.id);
-    goForward(r, reset);
+    goForward(r, reset, neutral);
   }
   function openNotes(id) {
     const r = app.byId(id);
     if (!r) return;
     const go = () => { const idx = current.pages.findIndex((p) => p.includes('data-id="' + id + '"') && p.includes('class="pad ')); const s = fb.single ? idx : Math.floor(idx / 2); fb.show(current.pages, Math.max(0, s), 'none'); wire(); say(describe()); };
     if (current && current.recipe.id === id) go();
-    else { jumpTo(r); setTimeout(go, 1800); }
+    else { jumpTo(r, false, true); setTimeout(go, 1800); }
   }
 
   /* ---------- live page wiring ---------- */
@@ -192,8 +194,9 @@ export function createReader(app) {
     box.querySelector('.nclear').onclick = (e) => { e.stopPropagation(); pad._sketch.clear(); say('Drawing cleared'); };
     box.querySelector('.nclear-text').onclick = (e) => { e.stopPropagation(); ta.value = ''; history.setNote(id, { text: '' }); show(); say('Notes cleared'); };
   }
-  function toggleBookmark(id) {
-    const on = history.toggleBookmark(id);
+  function toggleBookmark(id) { return setBookmark(id, !history.isBookmarked(id)); }
+  function setBookmark(id, on) {
+    history.setBookmark(id, on);
     root.querySelectorAll('.bm[data-id="' + id + '"]').forEach((b) => { b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
     /* the pages not on screen are stored as mark-up: every page of this recipe, on every visit in the trail, follows */
     trail.forEach((e) => { if (e.recipe.id === id) { e.pages = e.pages.map((p) => withBookmark(p, id, on)); if (e === current) fb.pages = e.pages; } });
@@ -263,6 +266,6 @@ export function createReader(app) {
 
   return {
     get active() { return active; }, get current() { return current; }, get fb() { return fb; },
-    open, close, next, prev, jumpTo, openNotes, toggleBookmark, esc, dwellMs: DWELL_MS
+    open, close, next, prev, jumpTo, openNotes, toggleBookmark, setBookmark, esc, dwellMs: DWELL_MS
   };
 }

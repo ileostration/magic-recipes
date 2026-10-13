@@ -89,11 +89,30 @@ const deep = m && app.byId(decodeURIComponent(m[1]));
 if (deep) { app.landing.hide(); app.reader.open(deep, false); }
 else app.landing.show(true);
 
-/* the loading screen lifts only once the meadow has drawn with the book pressing on it and the display faces are in */
-Promise.all([app.meadow && !deep ? app.meadow.ready : Promise.resolve(), document.fonts ? document.fonts.ready : Promise.resolve()]).then(() => {
+/* the loading screen lifts only once everything the first view needs is in: the meadow drawn with the book pressing
+   on it, the display faces, and every picture the title page paints with (marble, ornaments) */
+function imagesOf(root) {
+  const urls = new Set();
+  root.querySelectorAll('*').forEach((el) => { const m = getComputedStyle(el).backgroundImage.match(/url\("?([^")]+)"?\)/g); if (m) m.forEach((u) => urls.add(u.replace(/^url\("?/, '').replace(/"?\)$/, ''))); });
+  root.querySelectorAll('img[src]').forEach((im) => urls.add(im.src));
+  return [...urls].filter((u) => !u.startsWith('data:')).map((u) => new Promise((res) => { const im = new Image(); im.onload = im.onerror = () => res(); im.src = u; }));
+}
+const firstView = deep ? document.getElementById('reader') : document.getElementById('landing');
+const fontsIn = document.fonts ? Promise.all([document.fonts.ready, ...['Caesar Dressing', 'Afacad Flux', 'Noto Sans Phoenician'].map((f) => document.fonts.load('16px "' + f + '"').catch(() => null))]) : Promise.resolve();
+Promise.all([app.meadow && !deep ? app.meadow.ready : Promise.resolve(), fontsIn, ...imagesOf(firstView)]).then(() => {
   loader.set(4);
   if (!deep) app.landing.settle();
-  requestAnimationFrame(() => requestAnimationFrame(() => loader.done()));
+  requestAnimationFrame(() => requestAnimationFrame(() => { loader.done(); showConsent(); }));
 });
+
+/* the storage notice, once: the book remembers in this browser only */
+function showConsent() {
+  if (history.consent) return;
+  const bar = document.getElementById('consent');
+  bar.hidden = false;
+  const answer = (v) => { history.setConsent(v); bar.hidden = true; };
+  document.getElementById('consent-yes').addEventListener('click', () => answer('yes'));
+  document.getElementById('consent-no').addEventListener('click', () => answer('no'));
+}
 
 window.__app = app;

@@ -1,7 +1,8 @@
 /* Per-browser memory: what the reader lingered on, searched for, bookmarked and wrote.
    Lives in localStorage only; nothing leaves the device. Every access is guarded because storage can be blocked or full. */
-const KEY = 'grimoire.v2';
+const KEY = 'grimoire.v2', CONSENT_KEY = 'grimoire.consent';
 const MAX_READS = 60, MAX_SEARCHES = 30, MAX_SEEN = 300, NOTE_MAX = 520;
+let persist = true;   /* false once the reader asks not to be remembered: the book keeps its memory for this visit only */
 
 function blank() { return { reads: [], searches: [], seen: [], live: {}, bookmarks: [], notes: {}, goal: null, images: {} }; }
 function load() {
@@ -11,15 +12,18 @@ function load() {
   } catch (e) { /* ignore */ }
   return blank();
 }
-function save(d) { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) { /* ignore */ } }
+function save(d) { if (!persist) return; try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) { /* ignore */ } }
 
 /* plain text only: no tags, braces, backticks or control characters, and a hard length cap */
+try { if (localStorage.getItem(CONSENT_KEY) === 'no') persist = false; } catch (e) { /* ignore */ }
+
 export function cleanNote(s) {
   return String(s || '').replace(/[<>{}`\\]/g, '').replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, '').slice(0, NOTE_MAX);
 }
 
 export const history = {
   data: load(),
+  get persists() { return persist; },
   NOTE_MAX,
   noteRead(recipe, dwellMs) {
     const d = this.data;
@@ -62,12 +66,21 @@ export const history = {
   setGoal(g) { this.data.goal = g || null; save(this.data); },
 
   isBookmarked(id) { return this.data.bookmarks.includes(id); },
-  toggleBookmark(id) {
+  toggleBookmark(id) { return this.setBookmark(id, !this.isBookmarked(id)); },
+  setBookmark(id, on) {
     const d = this.data;
-    if (d.bookmarks.includes(id)) d.bookmarks = d.bookmarks.filter((x) => x !== id);
-    else d.bookmarks.push(id);
+    d.bookmarks = d.bookmarks.filter((x) => x !== id);
+    if (on) d.bookmarks.push(id);
     save(d);
-    return d.bookmarks.includes(id);
+    return on;
+  },
+  /* the storage notice: 'yes' remembers across visits, 'no' keeps everything in memory for this visit only */
+  get consent() { try { return localStorage.getItem(CONSENT_KEY); } catch (e) { return 'yes'; } },
+  setConsent(v) {
+    try { localStorage.setItem(CONSENT_KEY, v); } catch (e) { /* ignore */ }
+    persist = v !== 'no';
+    if (!persist) { try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ } }
+    else save(this.data);
   },
   bookmarks() { return this.data.bookmarks.slice(); },
 
