@@ -40,7 +40,7 @@ function sourceLine(r) {
   return '';
 }
 const DV2 = { fat: 78, satfat: 20, chol: 300, sodium: 2300, carbs: 275, fibre: 28, added: 50, protein: 50, vitd: 20, calcium: 1300, iron: 18, potassium: 4700 };
-export function nutritionPage(r) {
+export function nutritionPage(r, k) {
   const n = r.nutrition || (r.nutrition = estimate(r));
   const num = (v) => (v == null || isNaN(v) ? 0 : v);
   const pct = (k) => (DV2[k] ? '<i>' + Math.round(num(n[k]) / DV2[k] * 100) + '%</i>' : '<i></i>');
@@ -48,7 +48,7 @@ export function nutritionPage(r) {
   const fit = GOALS.bodybuilding.fits(r);
   const netKg = n.net_g >= 1000 ? (n.net_g / 1000).toFixed(2).replace(/\.?0+$/, '') + ' kg' : n.net_g + ' g';
   const cov = n.coverage != null && n.coverage < 1 ? ' Read from ' + Math.round(n.coverage * 100) + '% of the ingredient lines.' : '';
-  return frame() + '<div class="in"><div class="np">' +
+  return frame() + '<div class="in"><div class="np"' + (k && k < 1 ? ' style="font-size:' + (0.9 * k).toFixed(3) + 'em"' : '') + '>' +
     '<div class="macro"><div class="mhead">Macros</div><div><b>' + num(n.protein) + 'g</b><span>Protein</span></div><div><b>' + num(n.fat) + 'g</b><span>Fat</span></div><div><b>' + num(n.carbs) + 'g</b><span>Carbs</span></div><small>per serving</small></div>' +
     '<div class="label2">' +
       '<div class="lhead">Nutrition Facts</div>' +
@@ -112,8 +112,17 @@ export function paginate(r, n, measure, single) {
     }
   }
   flush(false);
+  /* the nutrition panel is one page: on a short screen its type steps down until the whole label fits */
+  let k = 1;
+  for (let i = 0; i < 16; i++) {
+    measure.innerHTML = '<div class="page">' + nutritionPage(r, k) + '</div>';
+    const el = measure.querySelector('.np');
+    el.style.justifyContent = 'flex-start'; /* centred overflow hides its top edge from scrollHeight */
+    if (el.scrollHeight <= el.clientHeight + 1 || k <= 0.4) break;
+    k = Math.max(0.4, k * Math.min(0.96, el.clientHeight / el.scrollHeight));
+  }
   measure.innerHTML = '';
-  const pages = [imagePage(r), ...text, nutritionPage(r), notesPage(r)];
+  const pages = [imagePage(r), ...text, nutritionPage(r, k), notesPage(r)];
   if (!single && pages.length % 2 === 1) pages.push(fillerPage()); /* two columns want an even count; one column does not */
   return pages;
 }

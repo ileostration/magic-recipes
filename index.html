@@ -19,11 +19,13 @@
 <body data-scene="landing" data-state="closed" class="booting">
 <!-- loading screen: a cauldron brews from left to right as the grimoire loads; ingredients fall in every half second -->
 <style>
-#loader { position: fixed; inset: 0; z-index: 100; background: #fff; display: grid; place-items: center; transition: opacity .5s ease; }
+#loader { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; transition: opacity .5s ease;
+  /* the book's own stone: the same marble and soft highlights its pages are made of */
+  background: radial-gradient(55% 38% at 24% 18%, rgba(255, 255, 255, .7), transparent 70%), radial-gradient(48% 34% at 76% 62%, rgba(255, 255, 255, .45), transparent 70%), url(assets/marble-0.webp) 0 0 / 600px 600px repeat, #f7f7fa; }
 #loader.off { opacity: 0; pointer-events: none; }
 #loader .pot { position: relative; width: 150px; height: 211px; }
-#loader .cauldron { position: absolute; left: 0; bottom: 0; width: 150px; height: auto; display: block; }
-#loader .ing { position: absolute; left: 50%; top: 8px; width: 50px; height: 50px; margin-left: -25px; pointer-events: none; animation: toss .9s cubic-bezier(.3, .6, .6, 1) forwards; }
+#loader .cauldron { position: absolute; left: 0; bottom: 0; width: 150px; height: auto; display: block; z-index: 2; }
+#loader .ing { position: absolute; left: 50%; top: 8px; width: 50px; height: 50px; margin-left: -25px; pointer-events: none; z-index: 1; animation: toss .9s cubic-bezier(.3, .6, .6, 1) forwards; }
 @keyframes toss { 0% { transform: translateY(-28px) rotate(-35deg) scale(.7); opacity: 0; } 18% { opacity: 1; } 75% { transform: translateY(78px) rotate(25deg) scale(.95); opacity: 1; } 100% { transform: translateY(104px) rotate(45deg) scale(.35); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { #loader .ing { animation-duration: .5s; } }
 </style>

@@ -252,7 +252,7 @@ export function createMeadow(canvas) {
   let rt;
   addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(resize, 120); });
 
-  let raf = 0, t0 = performance.now();
+  let raf = 0, t0 = performance.now(), shrinkT = 0;
   function frame(now) {
     if (!running) return;
     const time = (now - t0) / 1000;
@@ -279,12 +279,14 @@ export function createMeadow(canvas) {
       gmat.uniforms.uBookR.value.set(Math.max(0.5, Math.abs(r.x - c.x)), Math.max(0.5, Math.abs(b.z - c.z)));
       gmat.uniforms.uBookOn.value = on;
     },
-    resume() { if (running) return; running = true; canvas.style.display = ''; resize(); raf = requestAnimationFrame(frame); },
+    resume() { if (running) return; running = true; clearTimeout(shrinkT); canvas.style.display = ''; resize(); raf = requestAnimationFrame(frame); },
     pause() {
       if (!running) return;
       running = false; cancelAnimationFrame(raf);
       canvas.style.display = 'none';
-      renderer.setSize(1, 1, false);
+      /* giving the drawing buffer back makes the graphics process wait for the frames still in flight, which can freeze a
+         slow device for seconds: do it after the reader has finished arriving, not while it is arriving */
+      clearTimeout(shrinkT); shrinkT = setTimeout(() => { if (!running) renderer.setSize(1, 1, false); }, 2000);
     }
   };
   api.resume();

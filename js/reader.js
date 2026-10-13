@@ -29,7 +29,8 @@ export function createReader(app) {
     hint.classList.add('off');
     clearTimeout(say.t);
     if (!t) return;
-    say.t = setTimeout(() => { hint.textContent = t; hint.classList.remove('off'); }, 250);
+    clearTimeout(say.h);
+    say.t = setTimeout(() => { hint.textContent = t; hint.classList.remove('off'); say.h = setTimeout(() => hint.classList.add('off'), 2800); }, 250);   /* it names the page for a moment, then clears the text */
   }
   function describe() {
     if (!current) return '';
@@ -133,7 +134,10 @@ export function createReader(app) {
     root.querySelectorAll('.page.left .notes, .page.right .notes').forEach(wireNotes);
     root.querySelectorAll('.page.left .ph, .page.right .ph').forEach((ph) => {
       const im = ph.querySelector('img');
-      if (im) im.onerror = () => { im.classList.add('broken'); seek(ph); };
+      if (im) {
+        im.onerror = () => { im.classList.add('broken'); seek(ph); };
+        if (im.complete && im.naturalWidth === 0) im.onerror();      /* it may have failed before this ran */
+      }
       if (ph.classList.contains('seeking')) seek(ph);
     });
   }
@@ -239,11 +243,18 @@ export function createReader(app) {
     else if (k === 'b' && current) toggleBookmark(current.recipe.id);
   });
   let rt;
-  addEventListener('resize', () => {
+  /* lay the pages out again for the screen as it is now (or the type as it is now); unchanged pages are left alone */
+  function repaginate() {
     if (!active || !current) return;
-    clearTimeout(rt);
-    rt = setTimeout(() => { const was = fb.single, single = layout(); current.pages = paginate(current.recipe, current.n, measure, single); current.single = single; fb.show(current.pages, was !== single ? 0 : Math.min(fb.spread, fb.spreads - 1), 'none'); wire(); }, 150);
-  });
+    const was = fb.single, single = layout();
+    const pages = paginate(current.recipe, current.n, measure, single);
+    if (was === single && pages.length === current.pages.length && pages.every((p, i) => p === current.pages[i])) return;
+    current.pages = pages; current.single = single;
+    fb.show(current.pages, was !== single ? 0 : Math.min(fb.spread, fb.spreads - 1), 'none'); wire();
+  }
+  addEventListener('resize', () => { if (!active || !current) return; clearTimeout(rt); rt = setTimeout(repaginate, 150); });
+  /* a deep link paginates before the page's own faces have arrived: measure again once they have */
+  if (document.fonts) document.fonts.addEventListener('loadingdone', () => { if (!active || !current) return; clearTimeout(rt); rt = setTimeout(repaginate, 200); });
 
   /* ---------- runes drifting in the margins ---------- */
   const RUNE_FROM = 0x10900, RUNE_TO = 0x1091B;

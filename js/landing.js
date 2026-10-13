@@ -11,7 +11,7 @@ export function createLanding(app) {
   const stage = document.getElementById('stage');
   const hint = document.getElementById('hint');
   const root = document.documentElement;
-  let state = 'closed', cur = 0, busy = false, timer = 0;
+  let state = 'closed', cur = 0, busy = false, timer = 0, single = false;
 
   const guards = () => ['tl', 'tr', 'bl', 'br'].map((c) => '<svg class="guard ' + c + '" viewBox="0 0 100 100" aria-hidden="true"><use href="#guard"/></svg>').join('');
   const coverFace = () => '<div class="motif-band"></div>' + frame('cover-frame') + guards() + '<div class="in"><div class="cv">' +
@@ -54,7 +54,11 @@ export function createLanding(app) {
     s.setProperty('--P', P + 'px'); s.setProperty('--H', H + 'px'); s.setProperty('--fs', fs + 'px');
     s.setProperty('--sc', Math.min(vw * 0.6 / P, vh * 0.78 / H));
     s.setProperty('--sf', Math.min(vw * 0.56 / P, vh * 0.72 / H));
-    s.setProperty('--so', Math.min(vw * 0.88 / (2 * P), vh * 0.72 / H));
+    /* held upright on a phone, two pages would be too small to read: the open book then shows its right page alone, centred */
+    single = portrait && vw * 0.88 / (2 * P) < 0.75;
+    s.setProperty('--so', single ? Math.min(vw * 0.9 / P, vh * 0.72 / H) : Math.min(vw * 0.88 / (2 * P), vh * 0.72 / H));
+    if (single) { s.setProperty('--ox', '0px'); s.setProperty('--osx', '1.12'); } else { s.removeProperty('--ox'); s.removeProperty('--osx'); }
+    if (state === 'open') say(openHint());
     footprint();
   }
   /* the book presses the grass down only while it rests closed; once clicked it lifts free of the meadow */
@@ -66,15 +70,22 @@ export function createLanding(app) {
   layout();
   addEventListener('resize', layout);
 
+  const openHint = () => single ? 'Tap the page to begin' : 'Click the right page to begin';
   function say(t) { hint.classList.add('off'); clearTimeout(say.t); if (!t) return; say.t = setTimeout(() => { hint.textContent = t; hint.classList.remove('off'); }, 280); }
   function setState(s) {
     state = s;
     document.body.dataset.state = s;
-    say(s === 'closed' ? 'Click the book' : s === 'open' ? 'Click the right page to begin' : '');
+    say(s === 'closed' ? 'Click the book' : s === 'open' ? openHint() : '');
     book.setAttribute('aria-label', s === 'closed' ? 'The Grimoire of Delicacies. Activate to open.' : 'The Grimoire of Delicacies, open');
     if (s === 'closed') setTimeout(footprint, 1550);
   }
+  /* While the book is shut, nothing but the cover is drawn: the pages behind it (and the cover's own back) are not
+     rendered at all, so no engine's ordering of 3D layers or culling of back faces can ever let one show through. They
+     are drawn from the moment the cover starts to turn until it has closed again. */
+  let holdUntil = 0, holdT = 0;
+  function updateShut() { book.classList.toggle('shut', cur === 0 && performance.now() >= holdUntil); }
   function update() {
+    updateShut();
     leaves.forEach((lf, i) => {
       const flipped = i < cur;
       const z = flipped ? -(NL - i) * GAP : -i * GAP;
@@ -83,7 +94,11 @@ export function createLanding(app) {
       lf.classList.toggle('near', i === cur || i === cur - 1);
     });
   }
-  function goto(n) { cur = n; update(); }
+  function goto(n, instant) {
+    if (n !== cur && !instant) { holdUntil = performance.now() + 1600; clearTimeout(holdT); holdT = setTimeout(updateShut, 1650); }
+    if (instant) { holdUntil = 0; clearTimeout(holdT); }
+    cur = n; update();
+  }
   function lock(ms) { busy = true; clearTimeout(timer); timer = setTimeout(() => { busy = false; }, ms); }
   update();
 
@@ -112,7 +127,7 @@ export function createLanding(app) {
     const onBook = !!e.target.closest('.book');
     const right = e.clientX >= innerWidth / 2;
     if (state === 'closed') { if (onBook) openBook(); }
-    else if (state === 'open') { if (onBook) { right ? begin() : closeCover(); } }
+    else if (state === 'open') { if (onBook) { (single || right) ? begin() : closeCover(); } else if (single) closeCover(); }
   });
   addEventListener('keydown', (e) => {
     if (section.hidden) return;
@@ -149,7 +164,7 @@ export function createLanding(app) {
       section.hidden = false; section.classList.remove('leaving');
       document.body.dataset.scene = 'landing';
       app.meadow && app.meadow.resume();
-      if (closed) { goto(0); setState('closed'); } else { goto(1); setState('open'); }
+      if (closed) { goto(0, true); setState('closed'); } else { goto(1, true); setState('open'); }
       layout();
     },
     hide() {

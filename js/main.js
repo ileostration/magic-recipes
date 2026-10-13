@@ -95,7 +95,11 @@ function imagesOf(root) {
   const urls = new Set();
   root.querySelectorAll('*').forEach((el) => { const m = getComputedStyle(el).backgroundImage.match(/url\("?([^")]+)"?\)/g); if (m) m.forEach((u) => urls.add(u.replace(/^url\("?/, '').replace(/"?\)$/, ''))); });
   root.querySelectorAll('img[src]').forEach((im) => urls.add(im.src));
-  return [...urls].filter((u) => !u.startsWith('data:')).map((u) => new Promise((res) => { const im = new Image(); im.onload = im.onerror = () => res(); im.src = u; }));
+  return [...urls].filter((u) => !u.startsWith('data:')).map((u) => new Promise((res) => {
+    const im = new Image(); im.onload = im.onerror = () => res(); im.src = u;
+    /* a picture from another host (a dish photo on a deep link) never holds the screen for long */
+    if (new URL(u, location.href).origin !== location.origin) setTimeout(res, 4000);
+  }));
 }
 const firstView = deep ? document.getElementById('reader') : document.getElementById('landing');
 const fontsIn = document.fonts ? Promise.all([document.fonts.ready, ...['Caesar Dressing', 'Afacad Flux', 'Noto Sans Phoenician'].map((f) => document.fonts.load('16px "' + f + '"').catch(() => null))]) : Promise.resolve();

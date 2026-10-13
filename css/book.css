@@ -22,7 +22,7 @@
   --motif: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cg fill='none' stroke='%23c49a30' stroke-width='1.3' stroke-linecap='round'%3E%3Cpath d='M30 4c6 0 10 4 10 9s-4 7-7 7-5-2-5-4 2-3 3-3M30 4c-6 0-10 4-10 9s4 7 7 7 5-2 5-4-2-3-3-3'/%3E%3Cpath d='M30 56c6 0 10-4 10-9s-4-7-7-7-5 2-5 4 2 3 3 3M30 56c-6 0-10-4-10-9s4-7 7-7 5 2 5 4-2 3-3 3'/%3E%3Cpath d='M4 30c0-6 4-10 9-10s7 4 7 7-2 5-4 5-3-2-3-3M56 30c0-6-4-10-9-10s-7 4-7 7 2 5 4 5 3-2 3-3'/%3E%3Cpath d='M4 30c0 6 4 10 9 10s7-4 7-7-2-5-4-5-3 2-3 3M56 30c0 6-4 10-9 10s-7-4-7-7 2-5 4-5 3 2 3 3'/%3E%3Cpath d='M30 24l4 6-4 6-4-6z'/%3E%3Cpath d='M0 0q8 8 0 16M60 0q-8 8 0 16M0 60q8-8 0-16M60 60q-8-8 0-16'/%3E%3C/g%3E%3Cg fill='%23c49a30'%3E%3Ccircle cx='30' cy='30' r='1.6'/%3E%3Ccircle cx='30' cy='2' r='1.1'/%3E%3Ccircle cx='30' cy='58' r='1.1'/%3E%3Ccircle cx='2' cy='30' r='1.1'/%3E%3Ccircle cx='58' cy='30' r='1.1'/%3E%3C/g%3E%3C/svg%3E");
   --motif-small: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cg fill='none' stroke='%23b98a24' stroke-width='1' stroke-linecap='round'%3E%3Cpath d='M12 2c3 0 5 2 5 4s-2 3-3 3-2-1-2-2M12 2c-3 0-5 2-5 4s2 3 3 3 2-1 2-2'/%3E%3Cpath d='M12 22c3 0 5-2 5-4s-2-3-3-3-2 1-2 2M12 22c-3 0-5-2-5-4s2-3 3-3 2 1 2 2'/%3E%3Cpath d='M2 12c0-3 2-5 4-5s3 2 3 3-1 2-2 2M22 12c0-3-2-5-4-5s-3 2-3 3 1 2 2 2M2 12c0 3 2 5 4 5s3-2 3-3-1-2-2-2M22 12c0 3-2 5-4 5s-3-2-3-3 1-2 2-2'/%3E%3C/g%3E%3Ccircle cx='12' cy='12' r='1' fill='%23b98a24'/%3E%3C/svg%3E");
 }
-html, body { height: 100%; }
+html, body { height: 100%; overscroll-behavior: none; touch-action: manipulation; }
 body { margin: 0; background: #0a1a07; color: var(--ink); overflow: hidden; font-family: var(--text); font-weight: 400; -webkit-tap-highlight-color: transparent; }
 [hidden] { display: none !important; }
 
@@ -64,16 +64,22 @@ body[data-state="float"] .hover, body[data-state="open"] .hover { animation: bob
   transition: transform 1.5s var(--ease);
 }
 body[data-state="float"] .book { transform: translateZ(150px) rotateX(18deg) rotateZ(-3deg) rotateY(4deg); }
-body[data-state="open"] .book  { transform: translateX(calc(var(--P) / 2)) translateZ(40px) rotateX(14deg); }
+body[data-state="open"] .book  { transform: translateX(var(--ox, calc(var(--P) / 2))) translateZ(40px) rotateX(14deg); }
 /* the book's weight on the ground: a soft dark pool under it (the blades themselves flatten in the shader) */
 .shadow { position: absolute; left: calc(var(--P) / -2 * 1.06); top: calc(var(--H) / -2 * 1.04); width: calc(var(--P) * 1.12); height: calc(var(--H) * 1.08); border-radius: 50%;
   background: radial-gradient(closest-side, rgba(4, 18, 3, .7), rgba(4, 18, 3, .35) 60%, transparent 100%); filter: blur(12px); transform: translateZ(-60px) rotateX(24deg) rotateZ(-7deg); transition: transform 1.5s var(--ease), opacity 1.2s ease; }
 body[data-state="float"] .shadow { transform: translateZ(-60px) scale(1.15) rotateX(18deg); opacity: .4; }
-body[data-state="open"] .shadow { transform: translate3d(calc(var(--P) / 2), 0, -60px) scale(2.05, 1.08) rotateX(14deg); opacity: .8; }
+body[data-state="open"] .shadow { transform: translate3d(var(--ox, calc(var(--P) / 2)), 0, -60px) scale(var(--osx, 2.05), 1.08) rotateX(14deg); opacity: .8; }
 .book:focus-visible { outline: 2px solid #ffe9a0; }
 
 .leaf { position: absolute; inset: 0; transform-origin: 0 50%; transform-style: preserve-3d; transition: transform var(--flip) cubic-bezier(.5, .04, .22, 1); pointer-events: none; }
 .leaf.near { pointer-events: auto; }
+/* shut: only the cover's front is drawn (see landing.js) */
+.book.shut .leaf:not(.cover-leaf), .book.shut .leaf.cover-leaf .face.back { visibility: hidden; }
+/* each face is also drawn only on its own side of the turn, not left to back-face culling (some phone engines get it
+   wrong): it changes over as the leaf passes edge-on, about halfway through the turn */
+.leaf.cover-leaf .face { transition: visibility 0s linear calc(var(--flip) * .46); }
+.leaf.cover-leaf.flipped .face.front, .leaf.cover-leaf:not(.flipped) .face.back { visibility: hidden; }
 .leaf.flipped .face.front, .leaf:not(.flipped) .face.back { pointer-events: none; }
 .face, .rear {
   position: absolute; inset: 0; overflow: hidden;
@@ -143,7 +149,7 @@ body.view-open #reader > .runes, body.ball-open #reader > .runes { display: none
 
 /* ======================================================= scene two ======================================================= */
 #reader { position: fixed; inset: 0; z-index: 2; background: #0a1a07; }
-.spread { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; perspective: 2200px; }
+.spread { position: absolute; inset: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px); display: grid; grid-template-columns: 1fr 1fr; perspective: 2200px; }
 .spread.single { grid-template-columns: 1fr; }
 .spread.single .page.right { display: none; }
 .page { position: relative; overflow: hidden; font-size: clamp(13px, calc(.62vw + .62vh), 20px); box-sizing: border-box; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .8); }
@@ -190,7 +196,7 @@ body.view-open #reader > .runes, body.ball-open #reader > .runes { display: none
 
 /* photo page */
 .ph { position: absolute; inset: 11% 11% 11%; border: 1px solid rgba(184, 138, 36, .85); box-shadow: 0 0 0 4px rgba(255, 255, 255, .85), 0 0 0 5px rgba(184, 138, 36, .45); overflow: hidden; background: linear-gradient(160deg, #ece9e2, #d9d5cb); }
-.ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; color: transparent; font-size: 0; }
 .ph img.broken { display: none; }
 .ph.seeking::before { content: 'Seeking a picture\2026'; position: absolute; left: 0; right: 0; top: 46%; text-align: center; font-family: var(--display); font-size: 1.3em; letter-spacing: .08em; color: #a97a1c; opacity: .7; animation: seek 1.6s ease-in-out infinite; }
 @keyframes seek { 50% { opacity: .3; } }
@@ -219,7 +225,7 @@ body.view-open #reader > .runes, body.ball-open #reader > .runes { display: none
 .rp .more { margin-top: auto; text-align: right; font-weight: 600; font-size: .78em; letter-spacing: .2em; text-transform: uppercase; color: #9a7a30; padding-top: .5em; }
 
 /* nutrition page: a macro box, a two-column Nutrition Facts panel, the ingredient list and the net contents */
-.np { height: 100%; padding: 9% 9% 9%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: .55em; position: relative; font-size: .9em; overflow: hidden; }
+.np { height: 100%; padding: min(9%, 6vh) 9%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: .55em; position: relative; font-size: .9em; overflow: hidden; }
 .np .macro { display: grid; grid-template-columns: repeat(3, 1fr); gap: .3em; border: 1px solid rgba(184, 138, 36, .85); background: rgba(255, 255, 255, .55); padding: .4em .6em .35em; text-align: center; box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .7); }
 .np .macro .mhead { grid-column: 1 / -1; font-family: var(--display); font-size: 1.35em; line-height: 1; color: #a97a1c; letter-spacing: .06em; padding-bottom: .25em; margin-bottom: .1em; border-bottom: 1px solid rgba(184, 138, 36, .5); }
 .np .macro div b { display: block; font: 700 1.7em/1 var(--text); color: #a97a1c; }
@@ -299,29 +305,29 @@ body.view-open #reader > .runes, body.ball-open #reader > .runes { display: none
 .ncell small { color: #8f6a1a; font-style: italic; margin-top: auto; }
 .ncell:hover { background: rgba(255, 255, 255, .8); }
 
-.measure { position: fixed; left: -9999px; top: 0; width: 50vw; height: 100vh; visibility: hidden; pointer-events: none; }
-body.portrait .measure { width: 100vw; }
+.measure { position: fixed; left: -9999px; top: 0; width: calc((100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) / 2); bottom: 0; visibility: hidden; pointer-events: none; }
+body.portrait .measure { width: calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)); }
 /* one column: the glass menu sits over the foot of the page, so pages whose last line matters end above it */
 body.portrait .notes, body.portrait .np { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
 body.portrait .rp { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
 .measure .page { width: 100%; height: 100%; }
 
 /* ---------- glass menu ---------- */
-.menu { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 7; display: flex; gap: 10px; padding: 8px 12px; border-radius: 99px;
+.menu { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 7; display: flex; gap: clamp(4px, calc(2.2vw - 3px), 10px); padding: 8px clamp(8px, 2.4vw, 12px); border-radius: 99px; --mb: min(48px, calc((100vw - 62px) / 6.7)); max-width: calc(100vw - 12px); box-sizing: border-box;
   background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .5); backdrop-filter: blur(16px) saturate(1.3); -webkit-backdrop-filter: blur(16px) saturate(1.3); box-shadow: 0 10px 30px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .6); }
-.menu button { position: relative; width: 48px; height: 48px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .55); background: rgba(255, 255, 255, .22); color: #4a3814; cursor: pointer; padding: 0; display: grid; place-items: center; transition: background .25s ease, transform .25s ease; }
-.menu button svg { width: 24px; height: 24px; }
+.menu button { position: relative; width: var(--mb); height: var(--mb); flex: none; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .55); background: rgba(255, 255, 255, .22); color: #4a3814; cursor: pointer; padding: 0; display: grid; place-items: center; transition: background .25s ease, transform .25s ease; }
+.menu button svg { width: 50%; height: 50%; }
 .menu button:hover { background: rgba(255, 255, 255, .5); transform: translateY(-2px); }
 .menu button.on { background: rgba(233, 205, 117, .75); }
-.menu button[data-act="prev"], .menu button[data-act="next"] { width: 40px; }
+.menu button[data-act="prev"], .menu button[data-act="next"] { width: calc(var(--mb) * .85); }
 .menu button .count { position: absolute; right: -4px; top: -4px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box; border-radius: 9px; background: #c49a30; color: #2a1d06; font: 700 11px/18px var(--text); text-align: center; }
 .menu button .count:empty { display: none; }
-.menu .mini-orb { width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff 0, rgba(255, 255, 255, .6) 10%, rgba(120, 200, 255, .7) 30%, rgba(150, 70, 230, .8) 60%, rgba(20, 20, 70, .95) 100%); box-shadow: 0 0 10px rgba(140, 200, 255, .7); }
+.menu .mini-orb { width: 54%; height: 54%; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff 0, rgba(255, 255, 255, .6) 10%, rgba(120, 200, 255, .7) 30%, rgba(150, 70, 230, .8) 60%, rgba(20, 20, 70, .95) 100%); box-shadow: 0 0 10px rgba(140, 200, 255, .7); }
 body.ball-open .menu, body.ball-open .hint, body.ball-open .pill, body.view-open .hint { opacity: 0 !important; pointer-events: none !important; }
 
 /* ---------- views ---------- */
 .view { position: absolute; inset: 0; z-index: 3; background: #0a1a07; }
-.view .spread { inset: 0; }
+.view .spread { inset: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px); }
 #view-marks.cards .toc-spread { display: none; }
 /* the bookmark shelf (js/shelf.js does the layout and every pointer decision; nothing here takes pointer events,
    so a shadow, a skewed corner or a rising card can never change what the pointer is over) */
@@ -367,7 +373,7 @@ body.ball-open .menu, body.ball-open .hint, body.ball-open .pill, body.view-open
 .sinfo.dock small { grid-column: 4; grid-row: 1; text-align: right; align-self: center; margin: 0 0 .3em; }
 .edge { position: absolute; top: calc(54px + env(safe-area-inset-top, 0px)); z-index: 5; min-width: 44px; height: 44px; padding: 0 12px; display: flex; align-items: center; justify-content: center; gap: .4em; border-radius: 22px; border: 1px solid rgba(255, 240, 190, .45); background: rgba(20, 16, 6, .6); color: #f1d98a; font: 600 14px/1 var(--text); cursor: pointer; box-shadow: 0 0 22px rgba(233, 205, 117, .3); backdrop-filter: blur(4px); }
 .edge span { font-size: 24px; line-height: 1; }
-.edge.l { left: 8px; } .edge.r { right: 8px; }
+.edge.l { left: calc(8px + env(safe-area-inset-left, 0px)); } .edge.r { right: calc(8px + env(safe-area-inset-right, 0px)); }
 .edge[hidden] { display: none; }
 .shelf-wrap .empty-msg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #fff6d8; font-style: italic; display: none; }
 .shelf-wrap.empty .empty-msg { display: block; }
@@ -377,24 +383,26 @@ body.ball-open .menu, body.ball-open .hint, body.ball-open .pill, body.view-open
 .nsearch input:focus { box-shadow: 0 0 0 3px rgba(233, 205, 117, .6), 0 6px 20px rgba(0, 0, 0, .3); }
 .nsearch .nstatus { font-size: 12px; font-style: italic; color: #fff6d8; text-shadow: 0 1px 2px rgba(0, 0, 0, .6); min-height: 1em; }
 #view-notes .planner { padding-top: 17%; }
+/* a narrow screen: the search box drops below the close button instead of sitting under it */
+@media (max-width: 600px) { .nsearch { top: calc(48px + env(safe-area-inset-top, 0px)); } #view-notes .planner { padding-top: clamp(104px, 26%, 150px); } }
 
 /* ---------- UI ---------- */
 .ui { z-index: 8; }
-.hint { position: fixed; left: 50%; bottom: calc(104px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); max-width: calc(100% - 32px); box-sizing: border-box; text-align: center; padding: .5em 1.1em; border-radius: 99px;
+.hint { position: fixed; left: 50%; bottom: calc(104px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px); box-sizing: border-box; text-align: center; padding: .5em 1.1em; border-radius: 99px;
   background: rgba(18, 38, 12, .5); color: #fff6d8; border: 1px solid rgba(255, 240, 190, .35); font: 400 14px/1.2 var(--text); letter-spacing: .05em; pointer-events: none; transition: opacity .5s ease; }
 body[data-scene="landing"] .hint { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
 .hint.off { opacity: 0; }
 .pill { position: fixed; padding: .5em 1.1em; border-radius: 99px; cursor: pointer; background: rgba(18, 38, 12, .55); color: #fff6d8; border: 1px solid rgba(255, 240, 190, .4); font: 400 15px/1.2 var(--text); letter-spacing: .06em; opacity: 0; pointer-events: none; transition: opacity .6s ease; }
 .pill:focus-visible { outline: 2px solid #ffe9a0; outline-offset: 2px; }
-.closer { top: calc(14px + env(safe-area-inset-top, 0px)); left: 16px; }
+.closer { top: calc(14px + env(safe-area-inset-top, 0px)); left: calc(16px + env(safe-area-inset-left, 0px)); }
 .pill .ico { display: none; font-style: normal; }
 body[data-scene="reader"] .closer, body[data-scene="reader"] .credits-btn { top: calc(6px + env(safe-area-inset-top, 0px)); width: 32px; height: 32px; padding: 0; border-radius: 50%; display: grid; place-items: center; font-size: 17px; line-height: 1; }
-body[data-scene="reader"] .closer { left: 6px; }
-body[data-scene="reader"] .credits-btn { left: 44px; }
+body[data-scene="reader"] .closer { left: calc(6px + env(safe-area-inset-left, 0px)); }
+body[data-scene="reader"] .credits-btn { left: calc(44px + env(safe-area-inset-left, 0px)); }
 body[data-scene="reader"] .pill .lbl { display: none; }
 body[data-scene="reader"] .pill .ico { display: block; }
-.credits-btn { top: calc(14px + env(safe-area-inset-top, 0px)); left: 16px; }
-.goal-pill { top: calc(14px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); background: rgba(90, 60, 10, .7); border-color: #e9cd75; }
+.credits-btn { top: calc(14px + env(safe-area-inset-top, 0px)); left: calc(16px + env(safe-area-inset-left, 0px)); }
+.goal-pill { top: calc(14px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100% - 100px); background: rgba(90, 60, 10, .7); border-color: #e9cd75; }
 body[data-scene="reader"] .closer, .credits-btn, body[data-scene="reader"] .goal-pill:not([hidden]) { opacity: 1; pointer-events: auto; }
 
 /* ---------- the crystal ---------- */
@@ -439,7 +447,7 @@ body[data-scene="reader"] .closer, .credits-btn, body[data-scene="reader"] .goal
 /* ---------- panels ---------- */
 .panel { position: fixed; inset: 0; z-index: 10; display: none; align-items: center; justify-content: center; background: rgba(5, 12, 4, .7); padding: 16px; box-sizing: border-box; }
 .panel.on { display: flex; }
-.panel .card { max-width: 560px; width: 100%; max-height: 86vh; overflow: auto; background: #fbf9f4; color: var(--ink); border-radius: 10px; padding: 28px 30px; box-shadow: 0 20px 60px rgba(0, 0, 0, .5); font-size: 16px; line-height: 1.45; box-sizing: border-box; }
+.panel .card { max-width: 560px; width: 100%; max-height: 100%; overflow: auto; background: #fbf9f4; color: var(--ink); border-radius: 10px; padding: 28px 30px; box-shadow: 0 20px 60px rgba(0, 0, 0, .5); font-size: 16px; line-height: 1.45; box-sizing: border-box; }
 .panel h2 { font-family: var(--display); font-weight: 400; margin: 0 0 .4em; }
 .panel h3 { font-weight: 600; font-size: .9em; letter-spacing: .18em; text-transform: uppercase; color: #8f6a1a; margin: 1.2em 0 .3em; }
 .panel p { margin: .4em 0; }
@@ -465,7 +473,7 @@ body.booting .cam, body.booting .book, body.booting .shadow, body.booting .leaf,
   body[data-scene="reader"] .credits-btn { display: none !important; }
   .rp ul { columns: 1; }
   .planner .grid { grid-template-columns: 1fr; }
-  .menu button { width: 44px; height: 44px; }
+  .menu { --mb: min(44px, calc((100vw - 62px) / 6.7)); }
 }
 @media (prefers-reduced-motion: reduce) {
   :root { --flip: .5s; }
@@ -475,4 +483,13 @@ body.booting .cam, body.booting .book, body.booting .shadow, body.booting .leaf,
   .ball-wrap.on .crystal { animation: none; }
   .flipper { transition-duration: .3s; }
   .runes span { animation-duration: 1.2s; }
+}
+/* the crystal on a phone: a smaller sphere leaves a margin each side for the hand of cards */
+@media (max-width: 600px) { .scene { --d: min(58vw, 46vh, 400px); } .tcard { width: 54px; } }
+@media (max-width: 380px) { .scene { --d: min(52vw, 46vh, 400px); } .tcard { width: 46px; } }
+/* a phone on its side: the glass menu and the pages share a very short screen */
+@media (max-height: 480px) {
+  .menu { bottom: calc(5px + env(safe-area-inset-bottom, 0px)); padding: 4px clamp(8px, 2.4vw, 12px); --mb: min(34px, calc((100vw - 62px) / 6.7)); }
+  body:not(.portrait) .rp, body:not(.portrait) .notes { padding-top: 8%; padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px)); }
+  body:not(.portrait) .np { padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px)); padding-top: 3vh; }
 }

@@ -20,10 +20,8 @@ const TAROT = [
   'tonkatsu', 'char-siu', 'braised-pork-belly', 'barbecue-pork-ribs', 'pork-and-chive-dumplings',
   'rack-of-lamb', 'lamb-chops', 'lamb-curry', 'lamb-tagine', 'shepherds-pie'
 ];
-const SPOTS = [ /* % of the scene box: a loose hand of three either side of the sphere, stepped so every name stays readable */
-  { x: 2, y: 0, r: -12 }, { x: 16, y: 27, r: 8 }, { x: 1, y: 54, r: -6 },
-  { x: 85, y: 0, r: 12 }, { x: 71, y: 27, r: -8 }, { x: 86, y: 54, r: 6 }
-];
+/* how each of the six lies: [side, row, tilt]. Three a side: an outer card, an inner one stepped in and down, an outer one below. */
+const HAND = [['l', 0, -12, 'out'], ['l', 1, 8, 'in'], ['l', 2, -6, 'out'], ['r', 0, 12, 'out'], ['r', 1, -8, 'in'], ['r', 2, 6, 'out']];
 const DEFAULTS = ['chocolate cake', 'bodybuilding recipes', 'chicken', 'ramen', 'something with lemon', 'cheesecake', 'spicy'];
 const pretty = (s) => String(s).replace(/-/g, ' ');
 
@@ -126,9 +124,31 @@ export function createBall(app) {
   function dealTarot() {
     const deck = TAROT.filter((id) => app.byId(id)).sort(() => Math.random() - 0.5).slice(0, 6);
     tarot.innerHTML = deck.map((id, i) => {
-      const r = app.byId(id), s = SPOTS[i];
-      return '<button type="button" class="tcard" data-id="' + esc(id) + '" style="--x:' + s.x + '%;--y:' + s.y + '%;--r:' + s.r + 'deg;--i:' + i + '" aria-label="' + esc(r.title) + '"><img src="assets/cards/' + esc(id) + '.webp" alt="' + esc(r.title) + '" loading="lazy"></button>';
+      const r = app.byId(id);
+      return '<button type="button" class="tcard" data-id="' + esc(id) + '" style="--r:' + HAND[i][2] + 'deg;--i:' + i + '" aria-label="' + esc(r.title) + '"><img src="assets/cards/' + esc(id) + '.webp" alt="' + esc(r.title) + '" loading="lazy"></button>';
     }).join('');
+  }
+  /* The hand lies either side of the sphere, measured from its real edges so a card never covers the sphere, whatever the
+     screen: two staggered columns a side where there is room, a single column where there is not. */
+  function placeTarot() {
+    const cs = [...tarot.querySelectorAll('.tcard')];
+    if (!cs.length) return;
+    const sw = scene.clientWidth, d = crystal.offsetWidth;
+    if (!sw || !d) return;
+    const cw = cs[0].offsetWidth || 60, ch = cs[0].offsetHeight || cw * 1.45;
+    const edge = (sw - d) / 2, gap = Math.max(6, d * 0.03);
+    const two = edge - gap >= cw * 1.7;
+    const rows = [0, (d - ch) / 2, d - ch];
+    cs.forEach((c, i) => {
+      const [side, row, tilt, col] = HAND[i];
+      const inner = side === 'l' ? edge - gap - cw : sw - edge + gap;
+      const step = two && col === 'out' ? cw * 0.78 : 0;
+      let x = side === 'l' ? inner - step : inner + step;
+      /* a tilted card reaches past its own box: keep the whole of it on the screen */
+      const m = ch * Math.sin(Math.abs(tilt) * Math.PI / 180) / 2 + 3;
+      x = Math.max(m, Math.min(sw - cw - m, x));
+      c.style.setProperty('--x', x + 'px'); c.style.setProperty('--y', rows[row] + 'px');
+    });
   }
 
   crystal.addEventListener('click', (e) => { if (e.target.closest('.x')) return; act(); });
@@ -138,13 +158,14 @@ export function createBall(app) {
   form.addEventListener('submit', (e) => { e.preventDefault(); ask(input.value); });
   reveal.addEventListener('click', (e) => { e.preventDefault(); ask(input.value); });
   input.addEventListener('keydown', (e) => e.stopPropagation());
-  addEventListener('resize', () => { if (api.isOpen() && current()) lay(current()); });
+  addEventListener('resize', () => { if (api.isOpen()) { placeTarot(); if (current()) lay(current()); } });
 
   const api = {
     open(invite) {
       input.value = '';
       dealTarot();
       wrap.hidden = false;
+      placeTarot();
       document.body.classList.add('ball-open');
       requestAnimationFrame(() => wrap.classList.add('on'));
       gl && gl.start();
