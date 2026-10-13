@@ -266,7 +266,7 @@ body.view-open #reader > .runes, body.ball-open #reader > .runes { display: none
 .notes .note::placeholder { color: rgba(109, 84, 32, .55); font-style: italic; }
 .notes .ink { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
 .notes .pad.text .ink { pointer-events: none; }
-.notes .pad.draw .ink { pointer-events: auto; cursor: url(../assets/pen-cursor.svg) 23 9, crosshair; }
+.notes .pad.draw .ink { pointer-events: auto; cursor: url(../assets/pen-cursor.svg) 9 23, crosshair; }
 .notes .pad.draw .note { pointer-events: none; }
 .notes .pad.draw::after { content: ''; position: absolute; inset: -4px; border: 1px dashed rgba(184, 138, 36, .55); pointer-events: none; }
 .notes .nfoot { display: flex; justify-content: space-between; align-items: center; font-size: .78em; color: #9a7a30; letter-spacing: .05em; }
@@ -323,20 +323,32 @@ body.ball-open .menu, body.ball-open .hint, body.ball-open .pill, body.view-open
 .view { position: absolute; inset: 0; z-index: 3; background: #0a1a07; }
 .view .spread { inset: 0; }
 #view-marks.cards .toc-spread { display: none; }
-.ring-wrap { position: absolute; inset: 0; perspective: 1600px; perspective-origin: 50% 50%; overflow: hidden; cursor: grab; touch-action: none; background: radial-gradient(70% 60% at 50% 55%, #1b3a16, #0a1a07 75%); }
-#view-marks.list .ring-wrap { display: none; }
-.ring-wrap:active { cursor: grabbing; }
-.ring { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; transform: rotateX(-12deg) rotateY(var(--rot, 0deg)); transition: transform .08s linear; }
-.rcard { --R: min(30vw, 380px); --w: clamp(100px, 13vw, 170px); position: absolute; left: calc(var(--w) / -2); top: calc(var(--w) / -1.5); width: var(--w); aspect-ratio: 3 / 4;
-  transform: rotateY(var(--a)) translateZ(var(--R)); backface-visibility: hidden; -webkit-backface-visibility: hidden;
-  border: 1px solid #c49a30; border-radius: 10px; overflow: hidden; padding: 0; background: #fbf9f4; box-shadow: 0 12px 30px rgba(0, 0, 0, .5); cursor: pointer; transition: transform .35s ease, box-shadow .35s ease; }
-.rcard img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.rcard .rx { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .7); background: rgba(20, 14, 4, .55); color: #fff6d8; font: 400 18px/1 var(--text); cursor: pointer; padding: 0; display: grid; place-items: center; z-index: 2; opacity: .75; transition: opacity .2s ease, background .2s ease; }
-.rcard .rx:hover, .rcard .rx:focus-visible { opacity: 1; background: rgba(140, 30, 20, .85); outline: none; }
-.rcard span { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 8px 8px; font: 600 clamp(11px, 1.1vw, 15px)/1.2 var(--text); color: #fff; text-align: center; letter-spacing: .04em; background: linear-gradient(0deg, rgba(30, 20, 5, .85), transparent); }
-.rcard:hover, .rcard:focus-visible { transform: rotateY(var(--a)) translateZ(calc(var(--R) + 40px)) scale(1.08); box-shadow: 0 20px 50px rgba(0, 0, 0, .6), 0 0 30px rgba(233, 205, 117, .45); outline: none; z-index: 2; }
-.ring-wrap .empty-msg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #fff6d8; font-style: italic; display: none; }
-.ring-wrap.empty .empty-msg { display: block; }
+/* the bookmark shelf: every card stands turned 60 degrees, each a third clear of the one to its right, the row
+   centred on the screen; a card rises on hover and its facts appear beside it */
+.view { background: #060606; }
+.shelf-wrap { position: absolute; inset: 0; perspective: 1500px; perspective-origin: 50% 50%; overflow: hidden; cursor: grab; touch-action: pan-y; background: radial-gradient(80% 70% at 50% 50%, #161616, #050505 80%); }
+#view-marks.list .shelf-wrap { display: none; }
+.shelf-wrap:active { cursor: grabbing; }
+.shelf-wrap .vrunes { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.shelf { --w: 200px; --h: 267px; --step: 34px; --n: 1; --dx: 0px; position: absolute; left: 50%; top: 50%; width: calc(var(--w) * .5 + var(--step) * (var(--n) - 1)); height: var(--h); transform: translate(calc(-50% + var(--dx)), -50%); transform-style: preserve-3d; transition: transform .3s ease; }
+.scard { position: absolute; left: calc(var(--i) * var(--step)); top: 0; width: var(--w); height: var(--h); z-index: var(--i); margin-left: calc(var(--w) * -.25);
+  transform: rotateY(60deg); transform-origin: 50% 50%; backface-visibility: hidden; -webkit-backface-visibility: hidden;   /* left edge nearer: in a 3D context the card to the right covers the one to its left */
+  border: 1px solid #c49a30; border-radius: 10px; overflow: hidden; background: #fbf9f4; box-shadow: -18px 0 28px rgba(0, 0, 0, .65), -4px 0 8px rgba(0, 0, 0, .5); cursor: pointer; transition: transform .35s ease, box-shadow .35s ease; }
+.scard img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scard::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255, 255, 255, .14), transparent 45%, rgba(0, 0, 0, .4)); pointer-events: none; }
+.scard span { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 8px 8px; font: 600 clamp(11px, 1.1vw, 15px)/1.2 var(--text); color: #fff; text-align: center; letter-spacing: .04em; background: linear-gradient(0deg, rgba(30, 20, 5, .85), transparent); z-index: 1; }
+.scard .rx { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .7); background: rgba(20, 14, 4, .55); color: #fff6d8; font: 400 18px/1 var(--text); cursor: pointer; padding: 0; display: grid; place-items: center; z-index: 2; opacity: 0; transition: opacity .2s ease, background .2s ease; }
+.scard.lift .rx { opacity: .85; }
+.scard .rx:hover, .scard .rx:focus-visible { opacity: 1; background: rgba(140, 30, 20, .85); outline: none; }
+.scard.lift, .scard:focus-visible { transform: translateY(-80%) rotateY(60deg); box-shadow: -22px 10px 36px rgba(0, 0, 0, .7), 0 0 30px rgba(233, 205, 117, .35); z-index: 1000; outline: none; }
+.sinfo { position: absolute; left: calc(var(--i) * var(--step) + var(--w) * .56 + 12px); top: calc(var(--h) * -.8); width: max-content; max-width: 240px; z-index: 1001; color: #fff6d8; opacity: 0; transform: translateX(-8px); transition: opacity .25s ease, transform .25s ease; pointer-events: none; }
+.sinfo.on { opacity: 1; transform: none; }
+.sinfo b { display: block; font: 400 clamp(16px, 1.6vw, 24px)/1.05 var(--display); color: #f1d98a; letter-spacing: .04em; text-shadow: 0 0 10px rgba(241, 217, 138, .55), 0 2px 3px rgba(0, 0, 0, .8); margin-bottom: .35em; }
+.sinfo i { display: block; font: 400 clamp(13px, 1.15vw, 16px)/1.45 var(--text); font-style: normal; text-shadow: 0 1px 2px rgba(0, 0, 0, .9); }
+.sinfo i em { font-style: normal; color: #d9b85a; min-width: 4.2em; display: inline-block; }
+.sinfo small { display: block; margin-top: .35em; font: italic 400 12px/1.3 var(--text); color: rgba(255, 246, 216, .7); }
+.shelf-wrap .empty-msg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #fff6d8; font-style: italic; display: none; }
+.shelf-wrap.empty .empty-msg { display: block; }
 .nsearch { position: absolute; left: 50%; top: calc(14px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 4; width: min(92vw, 520px); display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .nsearch input { width: 100%; box-sizing: border-box; padding: .6em 1.1em; border-radius: 99px; border: 1px solid rgba(184, 138, 36, .9); background: rgba(255, 255, 255, .85); color: var(--ink); font: 400 16px/1.2 var(--text); outline: none; box-shadow: 0 6px 20px rgba(0, 0, 0, .3); backdrop-filter: blur(6px); }
 .nsearch input:focus { box-shadow: 0 0 0 3px rgba(233, 205, 117, .6), 0 6px 20px rgba(0, 0, 0, .3); }

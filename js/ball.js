@@ -6,6 +6,7 @@ import { history } from './history.js';
 import * as wiki from './wikibooks.js';
 import { createCrystal, curvedText } from './crystal.js';
 import { esc } from './pages.js';
+import { runeLayer } from './runes.js';
 
 const TAROT = [
   'beef-wellington', 'ribeye-steak', 'beef-bourguignon', 'bulgogi', 'pot-roast',
@@ -34,7 +35,7 @@ export function createBall(app) {
   const form = wrap.querySelector('form'), input = wrap.querySelector('input'), reveal = wrap.querySelector('.reveal');
   const gl = createCrystal(wrap.querySelector('canvas'));
   const runes = document.createElement('div'); runes.className = 'crunes'; runes.setAttribute('aria-hidden', 'true'); scene.insertBefore(runes, scene.firstChild);
-  let msgs = [], idx = -1, timer = 0, pending = 0, results = [], runeT = 0;
+  let msgs = [], idx = -1, timer = 0, pending = 0, results = [];
   /* browsers without CSS 3D get the same words laid flat */
   if (!(window.CSS && CSS.supports && CSS.supports('transform-style', 'preserve-3d'))) textEl.classList.add('flat');
 
@@ -53,21 +54,7 @@ export function createBall(app) {
   /* the display face arrives after the first paint on a cold cache: lay the words out again in it */
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (api.isOpen() && current()) lay(current()); });
   /* Phoenician letters popping and glowing around the sphere, never over the words inside it */
-  const RUNE_FROM = 0x10900, RUNE_TO = 0x1091B;
-  function popRune() {
-    if (wrap.hidden || document.hidden || runes.childElementCount > 14) return;
-    const box = runes.getBoundingClientRect(), ball = crystal.getBoundingClientRect();
-    const el = document.createElement('span');
-    el.textContent = String.fromCodePoint(RUNE_FROM + Math.floor(Math.random() * (RUNE_TO - RUNE_FROM + 1)));
-    let x, y, tries = 0;
-    do { x = Math.random() * box.width; y = Math.random() * box.height; tries++; }
-    while (tries < 12 && Math.hypot(x - (ball.left - box.left + ball.width / 2), y - (ball.top - box.top + ball.height / 2)) < ball.width * 0.56);
-    el.style.left = x + 'px'; el.style.top = y + 'px';
-    el.style.fontSize = (20 + Math.random() * 26) + 'px';
-    el.style.animationDuration = (2.6 + Math.random() * 2) + 's';
-    el.addEventListener('animationend', () => el.remove());
-    runes.appendChild(el);
-  }
+  const runeFx = runeLayer(runes, { every: 360, avoid: () => crystal.getBoundingClientRect() });
   function cycle() {
     clearTimeout(timer);
     if (!msgs.length) return;
@@ -161,7 +148,7 @@ export function createBall(app) {
       document.body.classList.add('ball-open');
       requestAnimationFrame(() => wrap.classList.add('on'));
       gl && gl.start();
-      clearInterval(runeT); runeT = setInterval(popRune, 360);
+      runeFx.start();
       idle(invite);
       if (matchMedia('(pointer: fine)').matches) setTimeout(() => input.focus({ preventScroll: true }), 650);
       app.setHash('crystal');
@@ -170,7 +157,7 @@ export function createBall(app) {
       if (wrap.hidden) return;
       wrap.classList.remove('on'); document.body.classList.remove('ball-open');
       clearTimeout(timer); gl && gl.stop();
-      clearInterval(runeT); runes.innerHTML = '';
+      runeFx.stop();
       setTimeout(() => { wrap.hidden = true; }, 500);
       if (app.reader.active && app.reader.current) app.setHash('r/' + app.reader.current.recipe.id);
     },

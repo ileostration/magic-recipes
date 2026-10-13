@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-  <!-- a wooden magic wand, drawn for this book in the flat style of the icon the owner pointed to; the star is the cursor hotspot (23,9) -->
+  <!-- a wooden wand held from the top right, its star tip at the bottom left where the ink comes out (hotspot 9,23) -->
   <g transform="rotate(45 16 16)">
-    <rect x="13.4" y="8" width="5.2" height="23" rx="1.6" fill="#9a5a26"/>
-    <rect x="13.4" y="8" width="1.9" height="23" rx="1" fill="#c98a4b"/>
-    <rect x="13.4" y="23" width="5.2" height="8" rx="1.6" fill="#5e3515"/>
-    <rect x="13.4" y="21.4" width="5.2" height="1.8" fill="#e2c063"/>
-    <rect x="13.4" y="8" width="5.2" height="1.8" rx=".8" fill="#e2c063"/>
+    <rect x="13.4" y="1" width="5.2" height="23" rx="1.6" fill="#9a5a26"/>
+    <rect x="13.4" y="1" width="1.9" height="23" rx="1" fill="#c98a4b"/>
+    <rect x="13.4" y="1" width="5.2" height="8" rx="1.6" fill="#5e3515"/>
+    <rect x="13.4" y="8.8" width="5.2" height="1.8" fill="#e2c063"/>
+    <rect x="13.4" y="22.2" width="5.2" height="1.8" rx=".8" fill="#e2c063"/>
   </g>
-  <path d="M23 2.6l1.7 4.7L29.4 9l-4.7 1.7L23 15.4l-1.7-4.7L16.6 9l4.7-1.7z" fill="#f7c948" stroke="#d99a1c" stroke-width=".6" stroke-linejoin="round"/>
-  <path d="M28.6 1.4l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7z" fill="#19b89a"/>
-  <path d="M17 1.2l.5 1.4 1.4.5-1.4.5-.5 1.4-.5-1.4-1.4-.5 1.4-.5z" fill="#f7c948"/>
+  <path d="M9 16.6l1.7 4.7 4.7 1.7-4.7 1.7L9 29.4l-1.7-4.7L2.6 23l4.7-1.7z" fill="#f7c948" stroke="#d99a1c" stroke-width=".6" stroke-linejoin="round"/>
+  <path d="M3.4 15.4l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7z" fill="#19b89a"/>
+  <path d="M15 26.8l.5 1.4 1.4.5-1.4.5-.5 1.4-.5-1.4-1.4-.5 1.4-.5z" fill="#f7c948"/>
 </svg>
