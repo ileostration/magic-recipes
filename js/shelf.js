@@ -6,33 +6,34 @@
 
    Hover model. The cards are never what the pointer hits: they are drawn with pointer-events off and everything is
    decided here from the card geometry, so a card that rises can never move out from under the cursor and drop again.
+   Nothing waits: the moment the pointer leaves a card's area it comes down and the card under the pointer goes up.
      - an idle card answers only to its visible strip (the part not covered by its right-hand neighbour; the last
        card answers over its whole face);
-     - once a card is up it answers over the whole risen card, over the strip where it stood, and over its facts panel;
-       as long as the pointer stays in that area the card stays up;
+     - a raised card answers over the whole card where it now is and over the strip where it stood, so it stays up for
+       as long as the pointer is anywhere in either place; it keeps its place in the stack, so the cards to its right
+       stay in front of it and their strips take the pointer from it;
      - nothing else answers: the air above a card, the shadow around it and the sheared corners are not part of it.
-   A press that moves is a drag (the row slides if it is wider than the screen) and never a click; a press that stays
-   put opens the recipe. On touch the first tap raises a card and the second opens it. */
+   The raised card shows a cross in its top left corner that removes the bookmark. The facts panel beside it is for
+   reading only. A press that moves is a drag (the row slides if it is wider than the screen) and never a click; a
+   press that stays put opens the recipe. On touch the first tap raises a card and the second opens it. */
 import { history } from './history.js';
 import { esc } from './pages.js';
 import { findImage } from './images.js';
 
 /* ratio: displayed width / height. slope: how steeply the top edge climbs (rise per unit of width).
    visible: share of a card's width left showing by the card in front. raise: how far a card rises, in card heights. */
-export const SHAPE = { ratio: 0.647, slope: 0.31, visible: 0.42, raise: 0.8, natural: 0.75, edge: 40, top: 44, maxH: 320, minH: 150 };
+export const SHAPE = { ratio: 0.647, slope: 0.31, visible: 0.42, raise: 0.8, natural: 0.75, edge: 40, top: 44, maxH: 320, minH: 150, drop: 0.1, bottom: 130 };
 const DRAG_PX = { mouse: 7, pen: 7, touch: 10 };
-const SWITCH_MS = 130, DROP_MS = 160;      /* a raised card is only handed over to another card once the pointer has settled on it, so crossing a neighbour's strip on the way to the facts panel does not steal it */
 
 export function createShelf(app, { wrap, onRemove }) {
   const stage = wrap.querySelector('.shelf');
   const info = wrap.querySelector('.sinfo');
   const edges = { l: wrap.querySelector('.edge.l'), r: wrap.querySelector('.edge.r') };
   let ids = [], cards = [], g = null;
-  let dx = 0, lifted = -1, panel = null, active = false;
+  let dx = 0, lifted = -1, panel = null, active = false;   /* panel: where the facts are drawn (for reading only) */
   let pointer = null;                 /* last mouse position, local to the wrap, or null */
   let press = null;                   /* the press in progress: { id, x, y, dx0, type, dragging } */
-  let anim = 0, target = 0, switchT = 0;
-  let recent = [];                    /* the last few mouse samples, for telling a pointer that is passing through from one that has arrived */
+  let anim = 0, target = 0;
 
   const local = (e) => { const r = wrap.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
 
@@ -45,7 +46,8 @@ export function createShelf(app, { wrap, onRemove }) {
     const wd = S.ratio * h, rise = S.slope * wd, step = S.visible * wd;
     const rowW = wd + Math.max(0, N - 1) * step;
     const over = Math.max(0, rowW - (vw - 2 * S.edge));
-    const cy = Math.max(vh / 2, S.top + (k + S.raise) * h);
+    /* the whole row sits lower than the middle so a raised card has room above it, but stays clear of the menu */
+    const cy = Math.max(S.top + (k + S.raise) * h, Math.min(vh / 2 + S.drop * vh, vh - S.bottom - k * h));
     dx = Math.max(-over / 2, Math.min(over / 2, dx));
     return { vw, vh, N, h, wd, rise, step, rowW, over, up: S.raise * h, wn: S.natural * h, s: wd / (S.natural * h),
       left0: vw / 2 - rowW / 2 + dx, yTop: cy - (h + rise) / 2 };
@@ -63,14 +65,13 @@ export function createShelf(app, { wrap, onRemove }) {
     if (!onFace(px, py, i, 0)) return false;
     return i === g.N - 1 || (px - xOf(i)) / g.wd <= SHAPE.visible;
   }
-  const inPanel = (px, py) => !!panel && px >= panel.l && px <= panel.r && py >= panel.t && py <= panel.b;
-
-  /* which card answers at this point, and through which part */
+  /* which card answers at this point */
   function zoneAt(px, py) {
     if (!g || !g.N) return null;
     if (lifted >= 0) {
+      /* a card to the right of the raised one is in front of it: its strip takes the pointer */
+      for (let i = g.N - 1; i > lifted; i--) if (onStrip(px, py, i)) return { i, part: 'card' };
       if (onFace(px, py, lifted, g.up) || onStrip(px, py, lifted)) return { i: lifted, part: 'card' };
-      if (inPanel(px, py)) return { i: lifted, part: 'panel' };
     }
     for (let i = g.N - 1; i >= 0; i--) if (onStrip(px, py, i)) return { i, part: 'card' };
     return null;
@@ -83,7 +84,8 @@ export function createShelf(app, { wrap, onRemove }) {
     const th = im && (im.thumb || im.url);
     return '<div class="scard" role="button" tabindex="0" data-id="' + esc(r.id) + '" data-i="' + i + '" aria-label="' + esc(r.title) + '">' +
       (th ? '<img src="' + esc(th) + '" alt="" loading="lazy" draggable="false">' : '<img alt="" class="seek" draggable="false">') +
-      '<i class="shade"></i><span>' + esc(r.title) + '</span></div>';
+      '<i class="shade"></i><span>' + esc(r.title) + '</span>' +
+      '<button type="button" class="rx" tabindex="-1" aria-label="Remove bookmark: ' + esc(r.title) + '" title="Remove bookmark">&times;</button></div>';
   }
   function seekThumbs() {
     stage.querySelectorAll('.scard img').forEach((im) => {
@@ -98,8 +100,10 @@ export function createShelf(app, { wrap, onRemove }) {
       const c = cards[i], st = c.style;
       st.left = xOf(i) + 'px'; st.top = (g.yTop + g.rise) + 'px'; st.width = g.wn + 'px'; st.height = g.h + 'px';
       st.transform = tf(i === lifted ? g.up : 0);
-      st.zIndex = i === lifted ? 1000 : i;
+      st.zIndex = i;
     }
+    stage.style.setProperty('--ux', 1 / g.s);                  /* the cross is drawn upright: it undoes the card's squash and shear */
+    stage.style.setProperty('--um', SHAPE.slope);
     if (lifted >= 0) placePanel(lifted);
     updateEdges();
   }
@@ -110,11 +114,11 @@ export function createShelf(app, { wrap, onRemove }) {
     edges.l.querySelector('b').textContent = left; edges.r.querySelector('b').textContent = right;
   }
 
-  /* the facts panel beside the raised card; it counts as part of the card for as long as the pointer is on it */
+  /* the facts panel: beside the raised card on its right, else its left, else docked above the menu on a narrow screen */
   function fillPanel(i) {
     const r = app.byId(ids[i]);
     const n = (r && r.nutrition) || {};
-    const v = (k, unit) => (n[k] == null ? '–' : n[k] + unit);
+    const v = (k, unit) => (n[k] == null ? '\u2013' : n[k] + unit);
     info.querySelector('.t').textContent = r ? r.title : '';
     info.querySelector('.kcal').textContent = v('kcal', ' kcal');
     info.querySelector('.pro').textContent = v('protein', ' g');
@@ -122,30 +126,26 @@ export function createShelf(app, { wrap, onRemove }) {
     info.querySelector('.fat').textContent = v('fat', ' g');
   }
   function placePanel(i) {
-    const pw = info.offsetWidth, ph = info.offsetHeight, x = xOf(i), gap = 8;
-    const top = g.yTop - g.up, rowBottom = g.yTop + g.rise + g.h;
+    info.classList.remove('dock'); info.style.width = '';
+    let pw = info.offsetWidth, ph = info.offsetHeight;
+    const x = xOf(i), gap = 8, top = g.yTop - g.up;
     let l, t;
-    if (x + g.wd + gap + pw <= g.vw - 8) {                  /* beside the raised card, on its right */
-      l = x + g.wd + gap; t = top;
-      panel = { l: x + g.wd - 1, r: l + pw, t, b: t + ph };
-    } else if (x - gap - pw >= 8) {                          /* ... or on its left */
-      l = x - gap - pw; t = top;
-      panel = { l, r: x + 1, t, b: t + ph };
-    } else {                                                 /* a narrow screen: under the row, so it never covers a card */
-      l = Math.max(8, Math.min(g.vw - pw - 8, x + g.wd / 2 - pw / 2)); t = rowBottom + 12;
-      panel = { l: l - 6, r: l + pw + 6, t: rowBottom - 2, b: t + ph };
+    if (x + g.wd + gap + pw <= g.vw - 8) { l = x + g.wd + gap; t = top; }                  /* beside the raised card, on its right */
+    else if (x - gap - pw >= 8) { l = x - gap - pw; t = top; }                               /* ... or on its left */
+    else {                                                                                   /* a narrow screen: docked above the menu */
+      info.classList.add('dock'); pw = Math.min(380, g.vw - 24); info.style.width = pw + 'px'; ph = info.offsetHeight;
+      l = (g.vw - pw) / 2; t = g.vh - 88 - ph;
     }
     info.style.left = l + 'px'; info.style.top = t + 'px';
+    panel = { l, t, r: l + pw, b: t + ph };
   }
   function setLift(i) {
     if (i === lifted) return;
-    clearTimeout(switchT); switchT = 0; pend = null;
     lifted = i;
     for (let k = 0; k < cards.length; k++) {
       const up = k === i;
       cards[k].classList.toggle('lift', up);
       cards[k].style.transform = tf(up ? g.up : 0);
-      cards[k].style.zIndex = up ? 1000 : k;
     }
     wrap.classList.toggle('has-lift', i >= 0);
     if (i >= 0) { fillPanel(i); info.classList.add('on'); placePanel(i); }
@@ -175,41 +175,13 @@ export function createShelf(app, { wrap, onRemove }) {
   }
 
   /* ---------- pointer ---------- */
-  /* is the pointer on its way to the facts panel? (moving at some speed, within about 35 degrees of straight at it) */
-  function towardPanel() {
-    const n = recent.length, last = recent[n - 1], prev = recent[n - 2];
-    if (!panel || !last || !prev || performance.now() - last.t > 220) return false;     /* a stall longer than that means it has stopped */
-    const dt = last.t - prev.t, vx = last.x - prev.x, vy = last.y - prev.y, sp = Math.hypot(vx, vy) / dt;
-    if (!(dt > 0 && dt < 400 && sp > 0.2)) return false;
-    const tx = (panel.l + panel.r) / 2 - last.x, ty = (panel.t + panel.b) / 2 - last.y;
-    return (vx * tx + vy * ty) / (Math.hypot(vx, vy) * Math.hypot(tx, ty) || 1) > 0.8;
-  }
-  /* Raising is immediate: the pointer is on a card's visible strip, so it goes up. Handing a raised card over to another
-     card, or letting it down, waits for the pointer to settle, so crossing a neighbour or a sliver of air on the way
-     to the facts panel does not drop the card. */
-  let pend = null;
-  function settle() {
-    switchT = 0;
-    if (!pointer || press || !pend) { pend = null; return; }
-    const z = zoneAt(pointer.x, pointer.y), want = z ? z.i : -1;
-    wrap.classList.toggle('over', !!z && z.part === 'card');
-    if (want === lifted) { pend = null; return; }
-    if (want !== pend.to) pend = { to: want, since: performance.now() };
-    const waited = performance.now() - pend.since;
-    if (waited < (want >= 0 ? SWITCH_MS : DROP_MS) || (towardPanel() && waited < 900)) { switchT = setTimeout(settle, 40); return; }
-    pend = null;
-    setLift(want);
-  }
+  /* no waiting: the card under the pointer goes up and any other comes down in the same moment */
   function hover(px, py) {
     const z = zoneAt(px, py);
-    const want = z ? z.i : -1;
-    wrap.classList.toggle('over', !!z && z.part === 'card');
-    if (want === lifted) { pend = null; clearTimeout(switchT); switchT = 0; return; }
-    if (lifted < 0) { pend = null; setLift(want); return; }                 /* nothing up yet: go up straight away */
-    if (!pend || pend.to !== want) pend = { to: want, since: performance.now() };
-    if (!switchT) switchT = setTimeout(settle, 40);
+    wrap.classList.toggle('over', !!z);
+    setLift(z ? z.i : -1);
   }
-  const ignore = (e) => !!e.target.closest('.edge, .sinfo button');
+  const ignore = (e) => !!e.target.closest('.edge, .rx');
   function open(i) { const r = app.byId(ids[i]); if (r) app.reader.jumpTo(r, false, true); }
 
   wrap.addEventListener('pointerdown', (e) => {
@@ -221,7 +193,7 @@ export function createShelf(app, { wrap, onRemove }) {
   wrap.addEventListener('pointermove', (e) => {
     if (!active || e.target.closest('.edge')) return;
     const p = local(e);
-    if (e.pointerType !== 'touch') { pointer = p; recent.push({ x: p.x, y: p.y, t: performance.now() }); if (recent.length > 6) recent.shift(); }
+    if (e.pointerType !== 'touch') pointer = p;
     if (press && press.id === e.pointerId) {
       if (!press.dragging && Math.hypot(p.x - press.x, p.y - press.y) > (DRAG_PX[press.type] || 8)) {
         press.dragging = true;
@@ -245,9 +217,8 @@ export function createShelf(app, { wrap, onRemove }) {
     const z = zoneAt(at.x, at.y);
     if (p.type === 'touch') {
       if (!z) { setLift(-1); return; }
-      if (z.part === 'panel') return;
       if (z.i === lifted) open(z.i); else setLift(z.i);
-    } else if (z && z.part === 'card') open(z.i);
+    } else if (z) open(z.i);
   }
   wrap.addEventListener('pointerup', (e) => finish(e, false));
   wrap.addEventListener('pointercancel', (e) => finish(e, true));
@@ -270,7 +241,8 @@ export function createShelf(app, { wrap, onRemove }) {
   }
   edges.l.addEventListener('click', () => animateTo((anim ? target : dx) + g.step * 5));
   edges.r.addEventListener('click', () => animateTo((anim ? target : dx) - g.step * 5));
-  info.querySelector('button').addEventListener('click', () => { if (lifted >= 0) onRemove(ids[lifted]); });
+  /* the cross on the raised card */
+  stage.addEventListener('click', (e) => { const x = e.target.closest('.rx'); if (!x) return; e.stopPropagation(); onRemove(x.closest('.scard').dataset.id); });
 
   /* keyboard: tab to a card, it rises; Enter opens it; the arrows walk the row */
   stage.addEventListener('focusin', (e) => { const c = e.target.closest('.scard'); if (c) { setLift(+c.dataset.i); reveal(+c.dataset.i); } });
@@ -278,6 +250,7 @@ export function createShelf(app, { wrap, onRemove }) {
     const c = e.target.closest('.scard'); if (!c) return;
     const i = +c.dataset.i;
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(i); }
+    else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); onRemove(c.dataset.id); }
     else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); const n = cards[Math.max(0, Math.min(cards.length - 1, i + (e.key === 'ArrowRight' ? 1 : -1)))]; if (n) n.focus(); }
   });
   addEventListener('resize', () => { if (active) layout(); });
@@ -289,7 +262,7 @@ export function createShelf(app, { wrap, onRemove }) {
       ids = history.bookmarks().slice().reverse().filter((id) => app.byId(id));
       stage.innerHTML = ids.map((id, i) => cardHtml(app.byId(id), i)).join('');
       cards = [...stage.querySelectorAll('.scard')];
-      lifted = -1; panel = null; info.classList.remove('on'); wrap.classList.remove('has-lift', 'over', 'dragging');
+      lifted = -1; panel = null; info.classList.remove('on', 'dock'); wrap.classList.remove('has-lift', 'over', 'dragging');
       dx = 0; press = null;
       layout();
       seekThumbs();
