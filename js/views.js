@@ -7,12 +7,13 @@ import { frame, esc } from './pages.js';
 import { recognize, sketchModel } from './sketch.js';
 import { findImage } from './images.js';
 import { runeLayer } from './runes.js';
+import { createShelf } from './shelf.js';
 
 
 export function createViews(app) {
   const marks = document.getElementById('view-marks');
   const notes = document.getElementById('view-notes');
-  const shelf = marks.querySelector('.shelf'), shelfWrap = marks.querySelector('.shelf-wrap');
+  const shelfWrap = marks.querySelector('.shelf-wrap');
   const runeFx = runeLayer(marks.querySelector('.vrunes'), { every: 420 });
   const tocArea = marks.querySelector('.spread');
   const toc = new Flipbook(tocArea);
@@ -22,89 +23,10 @@ export function createViews(app) {
   const nstatus = notes.querySelector('.nstatus');
   let marksMode = 'cards', openView = null;
 
-  /* ---------- bookmark shelf ----------
-     Every card stands turned sixty degrees. Cards to the left sit behind the ones to their right, a third of each
-     showing. The row is centred on the screen whatever its length; past the width of the screen it can be dragged. */
-  let dx = 0, lifted = -1;
-  function cardHtml(r, i) {
-    const im = r.image || history.image(r.id);
-    const th = im && (im.thumb || im.url);
-    const n = r.nutrition || {};
-    const v = (k, unit) => (n[k] == null ? '\u2013' : n[k] + unit);
-    return '<div class="scard" role="button" tabindex="0" data-id="' + esc(r.id) + '" data-i="' + i + '" style="--i:' + i + '" aria-label="' + esc(r.title) + '">' +
-      (th ? '<img src="' + esc(th) + '" alt="" loading="lazy">' : '<img alt="" class="seek">') + '<span>' + esc(r.title) + '</span>' +
-      '<button type="button" class="rx" aria-label="Remove bookmark: ' + esc(r.title) + '" title="Remove bookmark">&times;</button></div>' +
-      '<div class="sinfo" data-for="' + i + '" style="--i:' + i + '"><b>' + esc(r.title) + '</b>' +
-      '<i><em>Calories</em> ' + v('kcal', ' kcal') + '</i><i><em>Protein</em> ' + v('protein', ' g') + '</i><i><em>Carbs</em> ' + v('carbs', ' g') + '</i><i><em>Fat</em> ' + v('fat', ' g') + '</i><small>per serving</small></div>';
-  }
-  /* cards whose picture is missing or broken ask the image finder */
-  function seekThumbs() {
-    shelf.querySelectorAll('.scard img').forEach((im) => {
-      const fill = () => { const r = app.byId(im.closest('.scard').dataset.id); if (r) findImage(r).then((found) => { if (found && im.isConnected) { im.classList.remove('seek'); im.src = found.thumb || found.url; } }); };
-      if (im.classList.contains('seek')) fill(); else im.onerror = fill;
-    });
-  }
-  function sizeShelf(N) {
-    /* a card is 200 px wide at most; the row (half a card seen on the turn plus a third-of-a-card step per extra card)
-       shrinks to fit the screen, and never so tall that a raised card leaves the top */
-    const avail = Math.max(240, innerWidth - 48), tall = Math.max(240, innerHeight - 120);
-    let w = Math.min(200, avail / (0.5 + (N - 1) / 6), tall / (1.8 * 4 / 3));
-    w = Math.max(96, w);
-    shelf.style.setProperty('--w', w + 'px');
-    shelf.style.setProperty('--h', (w * 4 / 3) + 'px');
-    shelf.style.setProperty('--step', (w / 6) + 'px');
-    shelf.style.setProperty('--n', N);
-    const row = w * 0.5 + w / 6 * (N - 1);
-    return { w, row, over: Math.max(0, row - avail) };
-  }
-  function buildShelf() {
-    const ids = history.bookmarks().slice().reverse();
-    const N = ids.length;
-    shelfWrap.classList.toggle('empty', !N);
-    lifted = -1;
-    if (!N) { shelf.innerHTML = ''; return; }
-    sizeShelf(N);
-    shelf.innerHTML = ids.map((id, i) => { const r = app.byId(id); return r ? cardHtml(r, i) : ''; }).join('');
-    seekThumbs();
-    setDx(0);
-  }
-  function setDx(v) {
-    const N = history.bookmarks().length;
-    const { over } = sizeShelf(Math.max(1, N));
-    dx = over ? Math.max(-over / 2, Math.min(over / 2, v)) : 0;
-    shelf.style.setProperty('--dx', dx + 'px');
-  }
-  function lift(i) {
-    lifted = i;
-    shelf.querySelectorAll('.scard').forEach((c) => c.classList.toggle('lift', +c.dataset.i === i));
-    shelf.querySelectorAll('.sinfo').forEach((p) => p.classList.toggle('on', +p.dataset.for === i));
-  }
-  /* the row can be dragged when it is wider than the screen */
-  let dragX = null, dragDx = 0, moved = false, lastJump = 0;
+  /* ---------- bookmark shelf: see js/shelf.js ---------- */
+  const shelf = createShelf(app, { wrap: shelfWrap, onRemove: (id) => askRemove(id) });
   const cardsMode = () => marksMode === 'cards' && !marks.hidden;
-  marks.addEventListener('pointerdown', (e) => { if (!cardsMode() || e.target.closest('.menu, .rx')) return; dragX = e.clientX; dragDx = dx; moved = false; });
-  marks.addEventListener('pointermove', (e) => {
-    if (dragX != null) { const d = e.clientX - dragX; if (Math.abs(d) > 4) moved = true; if (moved) setDx(dragDx + d); return; }
-    const c = e.target.closest('.scard');
-    if (c && e.pointerType !== 'touch') lift(+c.dataset.i);
-  });
-  const endDrag = () => { dragX = null; };
-  marks.addEventListener('pointerup', endDrag); marks.addEventListener('pointercancel', endDrag);
-  marks.addEventListener('pointerleave', () => { endDrag(); if (cardsMode()) lift(-1); });
-  shelfWrap.addEventListener('pointerover', (e) => { if (!e.target.closest('.scard, .sinfo') && e.pointerType !== 'touch') lift(-1); });
-  marks.addEventListener('wheel', (e) => { if (!cardsMode()) return; const d = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX; if (shelf.style.getPropertyValue('--n') && Math.abs(d) > 2) { e.preventDefault(); setDx(dx - d * 0.6); } }, { passive: false });
-  marks.addEventListener('click', (e) => {
-    const x = e.target.closest('.rx');
-    if (x) { e.stopPropagation(); askRemove(x.closest('.scard').dataset.id); return; }
-    const c = e.target.closest('.scard');
-    if (!c || moved || performance.now() - lastJump < 500) { moved = false; return; }
-    /* on touch the first tap raises the card and shows its facts; the second opens it */
-    if (!c.classList.contains('lift')) { lift(+c.dataset.i); return; }
-    lastJump = performance.now();
-    const r = app.byId(c.dataset.id); if (r) app.reader.jumpTo(r, false, true);
-  });
-  marks.addEventListener('keydown', (e) => { const c = e.target.closest('.scard'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); const r = app.byId(c.dataset.id); if (r) app.reader.jumpTo(r, false, true); } });
-  addEventListener('resize', () => { if (cardsMode()) setDx(dx); });
+  marks.addEventListener('wheel', (e) => { if (cardsMode()) shelf.wheel(e); }, { passive: false });
 
   /* ---------- removing a bookmark from its card ---------- */
   const confirmBox = document.getElementById('confirm');
@@ -124,7 +46,7 @@ export function createViews(app) {
   function closeConfirm() { confirmBox.classList.remove('on'); confirmBox.setAttribute('aria-hidden', 'true'); pendingRemove = null; }
   function removeBookmark(id) {
     app.reader.setBookmark(id, false);
-    buildShelf();
+    shelf.build();
     toc.show(tocPages(), Math.min(toc.spread, Math.max(0, Math.ceil(tocPages().length / (toc.single ? 1 : 2)) - 1)), 'none');
     app.menu.refresh();
   }
@@ -223,7 +145,7 @@ export function createViews(app) {
     openView = 'marks';
     marks.hidden = false;
     document.body.classList.add('view-open');
-    buildShelf();
+    shelf.build();
     runeFx.start();
     toc.single = innerWidth / innerHeight < 0.95;
     toc.show(tocPages(), 0, 'none');
@@ -250,18 +172,19 @@ export function createViews(app) {
   function closeAll() {
     openView = null;
     runeFx.stop();
+    shelf.stop();
     marks.hidden = true; notes.hidden = true;
     document.body.classList.remove('view-open');
     app.menu.refresh();
   }
   return {
-    get open() { return openView; }, get marksMode() { return marksMode; },
+    get open() { return openView; }, get marksMode() { return marksMode; }, shelf,
     openMarks, openNotes, closeAll, anyOpen: () => !!openView,
     toggleMarksMode() { setMarksMode(marksMode === 'cards' ? 'list' : 'cards'); },
     /* the menu arrows: one card round the wheel, or one page of the list or the planner */
     flip(dir) {
       if (openView === 'marks') {
-        if (marksMode === 'cards') { const N = history.bookmarks().length; if (!N) return; const i = lifted < 0 ? (dir > 0 ? 0 : N - 1) : Math.max(0, Math.min(N - 1, lifted + dir)); lift(i); const c = shelf.querySelector('.scard[data-i="' + i + '"]'); if (c) { const r = c.getBoundingClientRect(); if (r.left < 24) setDx(dx + (24 - r.left)); else if (r.right > innerWidth - 24) setDx(dx - (r.right - innerWidth + 24)); } }
+        if (marksMode === 'cards') shelf.step(dir);
         else flipBook(toc, dir);
       }
       else if (openView === 'notes') flipBook(planner, dir);
